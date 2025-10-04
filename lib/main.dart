@@ -19,6 +19,7 @@ class MainApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => OrdersModel()),
       ],
       child: MaterialApp(
+        title: 'CodeCrave',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           primarySwatch: Colors.pink,

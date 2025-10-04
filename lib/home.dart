@@ -5,6 +5,8 @@ import 'cart.dart';
 import 'models/cart_model.dart';
 import 'product_details.dart';
 import 'models/dish_model.dart';
+import 'orders.dart';
+import 'profile.dart';
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -69,12 +71,30 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
                       _scaffoldKey.currentState?.openDrawer();
                     },
                   ),
-                  const Text(
-                    'Menu',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.pink,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.restaurant,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'CodeCrave',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.pink,
+                        ),
+                      ),
+                    ],
                   ),
                   Consumer<CartModel>(
                     builder: (context, cart, child) {
@@ -443,102 +463,203 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
 
   Widget _buildDrawer() {
     return Drawer(
-      child: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          DrawerHeader(
-            decoration: const BoxDecoration(
-              color: Colors.pink,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: const [
-                CircleAvatar(
-                  radius: 30,
-                  backgroundColor: Colors.white,
-                  child: Icon(
-                    Icons.person,
-                    size: 40,
-                    color: Colors.pink,
+      backgroundColor: const Color(0xFFF5F5F5),
+      child: SafeArea(
+        child: Column(
+          children: [
+            // Profile Section
+            Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                children: [
+                  const CircleAvatar(
+                    radius: 35,
+                    backgroundColor: Color(0xFFB2DFDB),
+                    child: Icon(Icons.person, size: 40, color: Colors.white),
                   ),
-                ),
-                SizedBox(height: 10),
-                Text(
-                  'Welcome',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Fiona May Monay',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
+                  const SizedBox(height: 4),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const ProfileScreen()),
+                      );
+                    },
+                    child: Text(
+                      'View Profile',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Menu Items
+            Expanded(
+              child: ListView(
+                padding: EdgeInsets.zero,
+                children: [
+                  _buildDrawerItem(
+                    icon: Icons.home,
+                    label: 'Home',
+                    isSelected: true,
+                    onTap: () {
+                      Navigator.pop(context);
+                    },
+                  ),
+                  _buildDrawerItem(
+                    icon: Icons.restaurant_menu,
+                    label: 'Menu',
+                    onTap: () {
+                      Navigator.pop(context);
+                    },
+                  ),
+                  _buildDrawerItem(
+                    icon: Icons.shopping_cart_outlined,
+                    label: 'My Cart',
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const CartScreen()),
+                      );
+                    },
+                  ),
+                  _buildDrawerItem(
+                    icon: Icons.receipt_long_outlined,
+                    label: 'Orders',
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const OrdersScreen()),
+                      );
+                    },
+                  ),
+                  _buildDrawerItem(
+                    icon: Icons.favorite_outline,
+                    label: 'Favorites',
+                    onTap: () {
+                      Navigator.pop(context);
+                      // TODO: Navigate to Favorites screen when created
+                    },
+                  ),
+                  _buildDrawerItem(
+                    icon: Icons.settings_outlined,
+                    label: 'Settings',
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const ProfileScreen()),
+                      );
+                    },
+                  ),
+                  _buildDrawerItem(
+                    icon: Icons.help_outline,
+                    label: 'Help & Support',
+                    onTap: () {
+                      Navigator.pop(context);
+                      // TODO: Navigate to Help & Support screen when created
+                    },
+                  ),
+                ],
+              ),
+            ),
+
+            // Logout Button
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: InkWell(
+                onTap: () {
+                  Navigator.pop(context);
+                  showDialog(
+                    context: context,
+                    builder: (BuildContext context) {
+                      return AlertDialog(
+                        title: const Text('Logout'),
+                        content: const Text('Are you sure you want to logout?'),
+                        actions: [
+                          TextButton(
+                            onPressed: () {
+                              Navigator.pop(context);
+                            },
+                            child: const Text('Cancel'),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              Navigator.pop(context);
+                              // Handle logout
+                            },
+                            child: const Text('Logout', style: TextStyle(color: Colors.red)),
+                          ),
+                        ],
+                      );
+                    },
+                  );
+                },
+                child: Row(
+                  children: [
+                    const Icon(Icons.logout, color: Colors.black54, size: 22),
+                    const SizedBox(width: 16),
+                    Text(
+                      'Logout',
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: Colors.grey[700],
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDrawerItem({
+    required IconData icon,
+    required String label,
+    bool isSelected = false,
+    required VoidCallback onTap,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 2.0),
+      child: Container(
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFFFCE4EC) : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: ListTile(
+          leading: Icon(
+            icon,
+            color: isSelected ? Colors.pink : Colors.black54,
+            size: 22,
+          ),
+          title: Text(
+            label,
+            style: TextStyle(
+              fontSize: 15,
+              color: isSelected ? Colors.pink : Colors.grey[700],
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
             ),
           ),
-          ListTile(
-            leading: const Icon(Icons.home, color: Colors.pink),
-            title: const Text('Home'),
-            onTap: () {
-              Navigator.pop(context);
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.restaurant_menu, color: Colors.pink),
-            title: const Text('Menu'),
-            onTap: () {
-              Navigator.pop(context);
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.shopping_cart, color: Colors.pink),
-            title: const Text('My Cart'),
-            onTap: () {
-              Navigator.pop(context);
-              // Navigate to cart
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.receipt_long, color: Colors.pink),
-            title: const Text('Orders'),
-            onTap: () {
-              Navigator.pop(context);
-              // Navigate to orders
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.favorite, color: Colors.pink),
-            title: const Text('Favorites'),
-            onTap: () {
-              Navigator.pop(context);
-              // Navigate to favorites
-            },
-          ),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.settings, color: Colors.pink),
-            title: const Text('Settings'),
-            onTap: () {
-              Navigator.pop(context);
-              // Navigate to settings
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.help_outline, color: Colors.pink),
-            title: const Text('Help & Support'),
-            onTap: () {
-              Navigator.pop(context);
-              // Navigate to help
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.logout, color: Colors.pink),
-            title: const Text('Logout'),
-            onTap: () {
-              Navigator.pop(context);
-              // Handle logout
-            },
-          ),
-        ],
+          onTap: onTap,
+        ),
       ),
     );
   }
