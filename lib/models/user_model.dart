@@ -6,7 +6,8 @@ class User {
   final String phone;
   final String address;
   final String? profileImage;
-  final String role; // 'admin', 'vendor', or 'user'
+  final String role; // 'admin', 'vendor', 'rider', or 'user'
+  final bool isActive; // Account status (active/disabled)
   final DateTime createdAt;
 
   User({
@@ -18,6 +19,7 @@ class User {
     required this.address,
     this.profileImage,
     this.role = 'user', // default role is 'user'
+    this.isActive = true, // default is active
     DateTime? createdAt,
   }) : createdAt = createdAt ?? DateTime.now();
 
@@ -32,6 +34,7 @@ class User {
       'address': address,
       'profileImage': profileImage,
       'role': role,
+      'isActive': isActive ? 1 : 0,
       'createdAt': createdAt.toIso8601String(),
     };
   }
@@ -47,6 +50,7 @@ class User {
       address: map['address'] as String,
       profileImage: map['profileImage'] as String?,
       role: map['role'] as String? ?? 'user',
+      isActive: (map['isActive'] as int?) == 1 || map['isActive'] == null,
       createdAt: DateTime.parse(map['createdAt'] as String),
     );
   }
@@ -61,6 +65,7 @@ class User {
     String? address,
     String? profileImage,
     String? role,
+    bool? isActive,
     DateTime? createdAt,
   }) {
     return User(
@@ -72,6 +77,7 @@ class User {
       address: address ?? this.address,
       profileImage: profileImage ?? this.profileImage,
       role: role ?? this.role,
+      isActive: isActive ?? this.isActive,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -79,5 +85,6 @@ class User {
   // Helper methods to check user role
   bool get isAdmin => role == 'admin';
   bool get isVendor => role == 'vendor';
+  bool get isRider => role == 'rider';
   bool get isRegularUser => role == 'user';
 }

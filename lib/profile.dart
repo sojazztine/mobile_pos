@@ -282,29 +282,30 @@ class ProfileScreen extends StatelessWidget {
 
                 const SizedBox(height: 32),
 
-                // Log Out Button
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton(
-                    onPressed: () => _logout(context),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.black,
-                      side: BorderSide(color: Colors.grey[300]!),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                // Log Out Button (only show if logged in)
+                if (authModel.isLoggedIn)
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton(
+                      onPressed: () => _logout(context),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.black,
+                        side: BorderSide(color: Colors.grey[300]!),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        backgroundColor: Colors.white,
                       ),
-                      backgroundColor: Colors.white,
-                    ),
-                    child: const Text(
-                      'Log Out',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
+                      child: const Text(
+                        'Log Out',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ),
-                ),
 
                 const SizedBox(height: 20),
               ],

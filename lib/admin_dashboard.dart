@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'models/auth_model.dart';
-import 'home.dart';
-import 'admin_vendor_management.dart';
+import 'package:fl_chart/fl_chart.dart';
+import 'components/admin_bottom_nav.dart';
+import 'components/admin_drawer.dart';
 
 class AdminDashboard extends StatelessWidget {
   const AdminDashboard({super.key});
@@ -10,367 +9,268 @@ class AdminDashboard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: Colors.white,
+      drawer: const AdminDrawer(currentPage: 'Dashboard'),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu, color: Colors.black),
+            onPressed: () {
+              Scaffold.of(context).openDrawer();
+            },
+          ),
+        ),
         title: const Text(
           'Dashboard',
           style: TextStyle(
             color: Colors.black,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
           ),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined, color: Colors.black),
-            onPressed: () {},
-          ),
-        ],
+        centerTitle: false,
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Quick Actions
-              const Text(
-                'Quick Actions',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Sales Performance Section
+            const Text(
+              'Sales Performance',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey,
+                fontWeight: FontWeight.w500,
               ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildQuickActionCard(
-                      icon: Icons.person_add,
-                      label: 'Add\nVendor',
-                      color: Colors.purple[100]!,
-                      iconColor: Colors.purple,
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const AdminVendorManagement(),
-                          ),
-                        );
-                      },
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              '\$12,345',
+              style: TextStyle(
+                fontSize: 32,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const Text(
+              'This Month',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey,
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Chart
+            SizedBox(
+              height: 120,
+              child: LineChart(
+                LineChartData(
+                  gridData: const FlGridData(show: false),
+                  titlesData: FlTitlesData(
+                    leftTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    rightTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    topTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        getTitlesWidget: (value, meta) {
+                          const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+                          if (value.toInt() >= 0 && value.toInt() < days.length) {
+                            return Padding(
+                              padding: const EdgeInsets.only(top: 8.0),
+                              child: Text(
+                                days[value.toInt()],
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            );
+                          }
+                          return const Text('');
+                        },
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildQuickActionCard(
-                      icon: Icons.receipt_long,
-                      label: 'Pending\nOrders',
-                      color: Colors.purple[100]!,
-                      iconColor: Colors.purple,
-                      onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Pending Orders')),
-                        );
-                      },
+                  borderData: FlBorderData(show: false),
+                  lineBarsData: [
+                    LineChartBarData(
+                      spots: [
+                        const FlSpot(0, 3),
+                        const FlSpot(1, 5),
+                        const FlSpot(2, 3.5),
+                        const FlSpot(3, 6),
+                        const FlSpot(4, 4),
+                        const FlSpot(5, 7),
+                        const FlSpot(6, 5),
+                      ],
+                      isCurved: true,
+                      color: Colors.pink,
+                      barWidth: 3,
+                      dotData: const FlDotData(show: false),
+                      belowBarData: BarAreaData(
+                        show: true,
+                        color: Colors.pink.withValues(alpha: 0.1),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildQuickActionCard(
-                      icon: Icons.inventory_2,
-                      label: 'Check Low\nStock',
-                      color: Colors.purple[100]!,
-                      iconColor: Colors.purple,
-                      onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Check Low Stock')),
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 24),
-
-              // Insights & Alerts
-              const Text(
-                'Insights & Alerts',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 16),
-              _buildAlertCard(
-                icon: Icons.trending_up,
-                message: 'High Sales Today! Keep it up!',
-                color: Colors.green[50]!,
-                iconColor: Colors.green,
-              ),
-              const SizedBox(height: 12),
-              _buildAlertCard(
-                icon: Icons.person_add,
-                message: '5 New Customer Sign-ups.',
-                color: Colors.blue[50]!,
-                iconColor: Colors.blue,
-              ),
-              const SizedBox(height: 12),
-              _buildAlertCard(
-                icon: Icons.warning,
-                message: 'Low Stock Alert: Tomatoes are running low.',
-                color: Colors.red[50]!,
-                iconColor: Colors.red,
-              ),
-
-              const SizedBox(height: 24),
-
-              // Sales Trends
-              const Text(
-                'Sales Trends',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  children: [
-                    _buildSalesTrend('Mon', 0.6, '\$1,250'),
-                    const SizedBox(height: 12),
-                    _buildSalesTrend('Tue', 0.8, '\$1,800'),
-                    const SizedBox(height: 12),
-                    _buildSalesTrend('Wed', 0.7, '\$1,500'),
                   ],
                 ),
               ),
+            ),
 
-              const SizedBox(height: 24),
+            const SizedBox(height: 30),
 
-              // Bottom Navigation Buttons
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildBottomNavButton(
-                      icon: Icons.dashboard,
-                      label: 'Dashboard',
-                      isSelected: true,
-                      onTap: () {},
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _buildBottomNavButton(
-                      icon: Icons.inventory,
-                      label: 'Products',
-                      onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Products')),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _buildBottomNavButton(
-                      icon: Icons.receipt,
-                      label: 'Orders',
-                      onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Orders')),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _buildBottomNavButton(
-                      icon: Icons.settings,
-                      label: 'Settings',
-                      onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Settings')),
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 24),
-
-              // Logout Button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () async {
-                    final authModel = Provider.of<AuthModel>(context, listen: false);
-                    await authModel.logout();
-                    if (!context.mounted) return;
-                    Navigator.pushAndRemoveUntil(
-                      context,
-                      MaterialPageRoute(builder: (context) => const Home()),
-                      (route) => false,
-                    );
-                  },
-                  icon: const Icon(Icons.logout),
-                  label: const Text('Logout'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.pink,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildQuickActionCard({
-    required IconData icon,
-    required String label,
-    required Color color,
-    required Color iconColor,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 8),
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, color: iconColor, size: 32),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
+            // Overview Section
+            const Text(
+              'Overview',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
               ),
             ),
+            const SizedBox(height: 16),
+
+            // Top Selling
+            _buildOverviewItem(
+              context,
+              icon: Icons.fastfood,
+              iconColor: Colors.orange[100]!,
+              iconBgColor: Colors.orange[50]!,
+              title: 'TOP SELLING',
+              subtitle: 'Chicken Sandwich',
+              trailing: '120 sold',
+              imageUrl: 'assets/burger.png', // You can add image later
+            ),
+
+            const SizedBox(height: 12),
+
+            // Low Stock
+            _buildOverviewItem(
+              context,
+              icon: Icons.inventory_2_outlined,
+              iconColor: Colors.yellow[700]!,
+              iconBgColor: Colors.yellow[50]!,
+              title: 'LOW STOCK',
+              subtitle: 'Fries',
+              trailing: '10 remaining',
+              imageUrl: 'assets/fries.png',
+            ),
+
+            const SizedBox(height: 12),
+
+            // Active Vendors
+            _buildOverviewItem(
+              context,
+              icon: Icons.store_outlined,
+              iconColor: Colors.brown[400]!,
+              iconBgColor: Colors.brown[50]!,
+              title: 'ACTIVE VENDORS',
+              subtitle: 'Vendor A',
+              trailing: 'Active',
+              imageUrl: 'assets/vendor.png',
+            ),
+
+            const SizedBox(height: 12),
+
+            // Pending Orders
+            _buildOverviewItem(
+              context,
+              icon: Icons.shopping_bag_outlined,
+              iconColor: Colors.red[400]!,
+              iconBgColor: Colors.red[50]!,
+              title: 'PENDING ORDERS',
+              subtitle: 'Rider 1',
+              trailing: 'Ready',
+              imageUrl: 'assets/rider.png',
+            ),
+
+            const SizedBox(height: 80), // Space for bottom nav
           ],
         ),
       ),
+      bottomNavigationBar: const AdminBottomNav(currentIndex: 0),
     );
   }
 
-  Widget _buildAlertCard({
+  Widget _buildOverviewItem(
+    BuildContext context, {
     required IconData icon,
-    required String message,
-    required Color color,
     required Color iconColor,
+    required Color iconBgColor,
+    required String title,
+    required String subtitle,
+    required String trailing,
+    String? imageUrl,
   }) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[200]!),
       ),
       child: Row(
         children: [
-          Icon(icon, color: iconColor),
+          // Icon/Image
+          Container(
+            width: 50,
+            height: 50,
+            decoration: BoxDecoration(
+              color: iconBgColor,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: iconColor, size: 28),
+          ),
           const SizedBox(width: 12),
+
+          // Text Content
           Expanded(
-            child: Text(
-              message,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  trailing,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ],
             ),
           ),
+
+          // Arrow
+          Icon(Icons.chevron_right, color: Colors.grey[400]),
         ],
       ),
     );
   }
 
-  Widget _buildSalesTrend(String day, double progress, String amount) {
-    return Row(
-      children: [
-        SizedBox(
-          width: 40,
-          child: Text(
-            day,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: LinearProgressIndicator(
-            value: progress,
-            backgroundColor: Colors.grey[200],
-            valueColor: const AlwaysStoppedAnimation<Color>(Colors.purple),
-            minHeight: 8,
-            borderRadius: BorderRadius.circular(4),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Text(
-          amount,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildBottomNavButton({
-    required IconData icon,
-    required String label,
-    bool isSelected = false,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: BoxDecoration(
-          color: isSelected ? Colors.purple[50] : Colors.white,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Column(
-          children: [
-            Icon(
-              icon,
-              color: isSelected ? Colors.purple : Colors.grey,
-              size: 24,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 10,
-                color: isSelected ? Colors.purple : Colors.grey,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }

@@ -23,7 +23,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 4,
+      version: 5,
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
     );
@@ -41,6 +41,7 @@ class DatabaseHelper {
         address TEXT NOT NULL,
         profileImage TEXT,
         role TEXT DEFAULT 'user',
+        isActive INTEGER DEFAULT 1,
         createdAt TEXT NOT NULL
       )
     ''');
@@ -97,6 +98,15 @@ class DatabaseHelper {
       } catch (e) {
         // Column might already exist, ignore error
         print('Note: stockQuantity column may already exist: $e');
+      }
+    }
+    if (oldVersion < 5) {
+      // Add isActive column to users table
+      try {
+        await db.execute('ALTER TABLE users ADD COLUMN isActive INTEGER DEFAULT 1');
+      } catch (e) {
+        // Column might already exist, ignore error
+        print('Note: isActive column may already exist: $e');
       }
     }
   }
@@ -266,6 +276,70 @@ class DatabaseHelper {
   Future<bool> emailExists(String email) async {
     final user = await getUserByEmail(email);
     return user != null;
+  }
+
+  // Get all vendors
+  Future<List<User>> getAllVendors() async {
+    final db = await database;
+
+    final maps = await db.query(
+      'users',
+      where: 'role = ?',
+      whereArgs: ['vendor'],
+      orderBy: 'createdAt DESC',
+    );
+
+    return maps.map((map) => User.fromMap(map)).toList();
+  }
+
+  // Toggle vendor active status
+  Future<bool> toggleVendorStatus(int vendorId, bool isActive) async {
+    final db = await database;
+
+    try {
+      await db.update(
+        'users',
+        {'isActive': isActive ? 1 : 0},
+        where: 'id = ? AND role = ?',
+        whereArgs: [vendorId, 'vendor'],
+      );
+      return true;
+    } catch (e) {
+      print('Error toggling vendor status: $e');
+      return false;
+    }
+  }
+
+  // Get all riders
+  Future<List<User>> getAllRiders() async {
+    final db = await database;
+
+    final maps = await db.query(
+      'users',
+      where: 'role = ?',
+      whereArgs: ['rider'],
+      orderBy: 'createdAt DESC',
+    );
+
+    return maps.map((map) => User.fromMap(map)).toList();
+  }
+
+  // Toggle rider active status
+  Future<bool> toggleRiderStatus(int riderId, bool isActive) async {
+    final db = await database;
+
+    try {
+      await db.update(
+        'users',
+        {'isActive': isActive ? 1 : 0},
+        where: 'id = ? AND role = ?',
+        whereArgs: [riderId, 'rider'],
+      );
+      return true;
+    } catch (e) {
+      print('Error toggling rider status: $e');
+      return false;
+    }
   }
 
   // ============ PRODUCT OPERATIONS ============

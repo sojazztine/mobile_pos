@@ -752,13 +752,13 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin, RouteA
               ),
             ),
 
-                // Logout Button
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: InkWell(
-                    onTap: () {
-                      Navigator.pop(context);
-                      if (authModel.isLoggedIn) {
+                // Logout Button (only show if logged in)
+                if (authModel.isLoggedIn)
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: InkWell(
+                      onTap: () {
+                        Navigator.pop(context);
                         showDialog(
                           context: context,
                           builder: (BuildContext dialogContext) {
@@ -790,27 +790,22 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin, RouteA
                             );
                           },
                         );
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('You are not logged in')),
-                        );
-                      }
-                    },
-                    child: Row(
-                      children: [
-                        const Icon(Icons.logout, color: Colors.black54, size: 22),
-                        const SizedBox(width: 16),
-                        Text(
-                          'Logout',
-                          style: TextStyle(
-                            fontSize: 15,
-                            color: Colors.grey[700],
+                      },
+                      child: Row(
+                        children: [
+                          const Icon(Icons.logout, color: Colors.black54, size: 22),
+                          const SizedBox(width: 16),
+                          Text(
+                            'Logout',
+                            style: TextStyle(
+                              fontSize: 15,
+                              color: Colors.grey[700],
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                ),
               ],
             ),
           ),
