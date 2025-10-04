@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'dart:io';
 import 'components/nav_footer.dart';
 import 'cart.dart';
 import 'models/cart_model.dart';
+import 'models/auth_model.dart';
 import 'product_details.dart';
 import 'models/dish_model.dart';
 import 'orders.dart';
@@ -18,34 +20,56 @@ class Home extends StatefulWidget {
 class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  String selectedCategory = 'Popular';
+  final TextEditingController _searchController = TextEditingController();
+  String selectedCategory = 'All';
+  String searchQuery = '';
+  List<Dish> filteredDishes = [];
+
+  final List<String> categories = ['All', 'Popular', 'Appetizers', 'Main Courses', 'Desserts'];
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    _tabController.addListener(() {
-      if (!_tabController.indexIsChanging) {
-        setState(() {
-          switch (_tabController.index) {
-            case 0:
-              selectedCategory = 'Popular';
-              break;
-            case 1:
-              selectedCategory = 'Appetizers';
-              break;
-            case 2:
-              selectedCategory = 'Main Courses';
-              break;
-          }
-        });
+    filteredDishes = DishData.allDishes;
+    _searchController.addListener(_onSearchChanged);
+  }
+
+  void _onSearchChanged() {
+    setState(() {
+      searchQuery = _searchController.text;
+      _updateFilteredDishes();
+    });
+  }
+
+  void _updateFilteredDishes() {
+    if (searchQuery.isEmpty) {
+      if (selectedCategory == 'All') {
+        filteredDishes = DishData.allDishes;
+      } else {
+        filteredDishes = DishData.getDishesByCategory(selectedCategory);
       }
+    } else {
+      filteredDishes = DishData.searchDishes(searchQuery);
+      if (selectedCategory != 'All') {
+        filteredDishes = filteredDishes
+            .where((dish) => dish.category == selectedCategory)
+            .toList();
+      }
+    }
+  }
+
+  void _selectCategory(String category) {
+    setState(() {
+      selectedCategory = category;
+      _updateFilteredDishes();
     });
   }
 
   @override
   void dispose() {
     _tabController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -153,10 +177,19 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: TextField(
+                  controller: _searchController,
                   decoration: InputDecoration(
                     hintText: 'Search for dishes',
                     hintStyle: TextStyle(color: Colors.grey[400]),
                     prefixIcon: Icon(Icons.search, color: Colors.grey[400]),
+                    suffixIcon: searchQuery.isNotEmpty
+                        ? IconButton(
+                            icon: Icon(Icons.clear, color: Colors.grey[400]),
+                            onPressed: () {
+                              _searchController.clear();
+                            },
+                          )
+                        : null,
                     border: InputBorder.none,
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 16,
@@ -169,76 +202,85 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
 
             const SizedBox(height: 16),
 
-            // Category Tabs
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: TabBar(
-                controller: _tabController,
-                labelColor: Colors.white,
-                unselectedLabelColor: Colors.black,
-                indicator: BoxDecoration(
-                  color: Colors.pink,
-                  borderRadius: BorderRadius.circular(25),
-                ),
-                indicatorSize: TabBarIndicatorSize.tab,
-                tabs: const [
-                  Tab(text: 'Popular'),
-                  Tab(text: 'Appetizers'),
-                  Tab(text: 'Main Courses'),
+            // Category Pills
+            SizedBox(
+              height: 40,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                children: [
+                  _buildCategoryPill('All'),
+                  const SizedBox(width: 8),
+                  _buildCategoryPill('Popular'),
+                  const SizedBox(width: 8),
+                  _buildCategoryPill('Appetizers'),
+                  const SizedBox(width: 8),
+                  _buildCategoryPill('Main Courses'),
+                  const SizedBox(width: 8),
+                  _buildCategoryPill('Desserts'),
                 ],
               ),
             ),
 
             const SizedBox(height: 20),
 
-            // Content
-            Expanded(
-              child: SingleChildScrollView(
-                child: Builder(
-                  builder: (context) {
-                    final dishes = DishData.getDishesByCategory(selectedCategory);
-
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Section Title
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                          child: Text(
-                            selectedCategory,
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-
-                        // Dishes Grid
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                          child: GridView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              mainAxisSpacing: 16,
-                              crossAxisSpacing: 16,
-                              childAspectRatio: 0.75,
-                            ),
-                            itemCount: dishes.length,
-                            itemBuilder: (context, index) {
-                              final dish = dishes[index];
-                              return _buildDishCard(dish);
-                            },
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                      ],
-                    );
-                  },
+            // Section Title
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Text(
+                searchQuery.isNotEmpty
+                    ? 'Search Results (${filteredDishes.length})'
+                    : selectedCategory == 'All'
+                        ? 'All Dishes'
+                        : selectedCategory == 'Popular'
+                            ? 'Popular Dishes'
+                            : selectedCategory,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Content
+            Expanded(
+              child: filteredDishes.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.search_off,
+                            size: 64,
+                            color: Colors.grey[300],
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'No dishes found',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : GridView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        mainAxisSpacing: 16,
+                        crossAxisSpacing: 16,
+                        childAspectRatio: 0.7,
+                      ),
+                      itemCount: filteredDishes.length,
+                      itemBuilder: (context, index) {
+                        final dish = filteredDishes[index];
+                        return _buildDishCard(dish);
+                      },
+                    ),
             ),
           ],
         ),
@@ -346,6 +388,31 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
     );
   }
 
+  Widget _buildCategoryPill(String category) {
+    final isSelected = selectedCategory == category;
+    return GestureDetector(
+      onTap: () => _selectCategory(category),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.pink : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? Colors.pink : Colors.grey[300]!,
+          ),
+        ),
+        child: Text(
+          category,
+          style: TextStyle(
+            color: isSelected ? Colors.white : Colors.black87,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+            fontSize: 14,
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildDishCard(Dish dish) {
     final bgColor = Color(dish.colorValue);
 
@@ -364,86 +431,105 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
           ),
         );
       },
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Stack(
-            children: [
-              Container(
-                height: 140,
-                decoration: BoxDecoration(
-                  color: bgColor,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-              ),
-              // Category Badge
-              Positioned(
-                top: 8,
-                left: 8,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: _getCategoryColor(dish.category),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    dish.category,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Image Container
+            Expanded(
+              child: Stack(
+                children: [
+                  Container(
+                    decoration: BoxDecoration(
+                      color: bgColor,
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(16),
+                      ),
                     ),
                   ),
-                ),
-              ),
-              Positioned(
-                bottom: 8,
-                right: 8,
-                child: Container(
-                  decoration: const BoxDecoration(
-                    color: Colors.pink,
-                    shape: BoxShape.circle,
+                  // Add to Cart Button
+                  Positioned(
+                    bottom: 8,
+                    right: 8,
+                    child: Container(
+                      decoration: const BoxDecoration(
+                        color: Colors.pink,
+                        shape: BoxShape.circle,
+                      ),
+                      child: IconButton(
+                        icon: const Icon(Icons.add, color: Colors.white, size: 20),
+                        padding: const EdgeInsets.all(8),
+                        constraints: const BoxConstraints(),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ProductDetailsScreen(
+                                productName: dish.name,
+                                description: dish.description,
+                                basePrice: dish.price,
+                                imageType: dish.imageType,
+                                backgroundColor: bgColor,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
                   ),
-                  child: IconButton(
-                    icon: const Icon(Icons.add, color: Colors.white, size: 20),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ProductDetailsScreen(
-                            productName: dish.name,
-                            description: dish.description,
-                            basePrice: dish.price,
-                            imageType: dish.imageType,
-                            backgroundColor: bgColor,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
+                ],
               ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            dish.name,
-            style: const TextStyle(
-              fontWeight: FontWeight.w600,
-              fontSize: 13,
             ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            '\$${dish.price.toStringAsFixed(2)}',
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 13,
+            // Dish Details
+            Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    dish.name,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    dish.description,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.grey[600],
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '\$${dish.price.toStringAsFixed(2)}',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                      color: Colors.pink,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -461,50 +547,75 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
     }
   }
 
+  String _getInitials(String name) {
+    if (name.isEmpty) return 'G';
+    final parts = name.trim().split(' ');
+    if (parts.length == 1) {
+      return parts[0][0].toUpperCase();
+    }
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+
   Widget _buildDrawer() {
-    return Drawer(
-      backgroundColor: const Color(0xFFF5F5F5),
-      child: SafeArea(
-        child: Column(
-          children: [
-            // Profile Section
-            Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
-                children: [
-                  const CircleAvatar(
-                    radius: 35,
-                    backgroundColor: Color(0xFFB2DFDB),
-                    child: Icon(Icons.person, size: 40, color: Colors.white),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Fiona May Monay',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const ProfileScreen()),
-                      );
-                    },
-                    child: Text(
-                      'View Profile',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey[600],
+    return Consumer<AuthModel>(
+      builder: (context, authModel, child) {
+        final user = authModel.currentUser;
+
+        return Drawer(
+          backgroundColor: const Color(0xFFF5F5F5),
+          child: SafeArea(
+            child: Column(
+              children: [
+                // Profile Section
+                Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Column(
+                    children: [
+                      CircleAvatar(
+                        radius: 35,
+                        backgroundColor: Colors.pink[100],
+                        backgroundImage: user?.profileImage != null
+                            ? FileImage(File(user!.profileImage!))
+                            : null,
+                        child: user?.profileImage == null
+                            ? Text(
+                                _getInitials(user?.fullName ?? 'Guest User'),
+                                style: TextStyle(
+                                  color: Colors.pink[700],
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              )
+                            : null,
                       ),
-                    ),
+                      const SizedBox(height: 8),
+                      Text(
+                        user?.fullName ?? 'Guest',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.pop(context);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const ProfileScreen()),
+                          );
+                        },
+                        child: Text(
+                          user?.email ?? 'View Profile',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ),
+                ),
 
             // Menu Items
             Expanded(
@@ -579,55 +690,70 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
               ),
             ),
 
-            // Logout Button
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: InkWell(
-                onTap: () {
-                  Navigator.pop(context);
-                  showDialog(
-                    context: context,
-                    builder: (BuildContext context) {
-                      return AlertDialog(
-                        title: const Text('Logout'),
-                        content: const Text('Are you sure you want to logout?'),
-                        actions: [
-                          TextButton(
-                            onPressed: () {
-                              Navigator.pop(context);
-                            },
-                            child: const Text('Cancel'),
-                          ),
-                          TextButton(
-                            onPressed: () {
-                              Navigator.pop(context);
-                              // Handle logout
-                            },
-                            child: const Text('Logout', style: TextStyle(color: Colors.red)),
-                          ),
-                        ],
-                      );
+                // Logout Button
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: InkWell(
+                    onTap: () {
+                      Navigator.pop(context);
+                      if (authModel.isLoggedIn) {
+                        showDialog(
+                          context: context,
+                          builder: (BuildContext dialogContext) {
+                            return AlertDialog(
+                              title: const Text('Logout'),
+                              content: const Text('Are you sure you want to logout?'),
+                              actions: [
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.pop(dialogContext);
+                                  },
+                                  child: const Text('Cancel'),
+                                ),
+                                TextButton(
+                                  onPressed: () async {
+                                    await authModel.logout();
+                                    if (!context.mounted) return;
+                                    Navigator.pop(dialogContext);
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Logged out successfully'),
+                                        backgroundColor: Colors.green,
+                                      ),
+                                    );
+                                  },
+                                  child: const Text('Logout', style: TextStyle(color: Colors.red)),
+                                ),
+                              ],
+                            );
+                          },
+                        );
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('You are not logged in')),
+                        );
+                      }
                     },
-                  );
-                },
-                child: Row(
-                  children: [
-                    const Icon(Icons.logout, color: Colors.black54, size: 22),
-                    const SizedBox(width: 16),
-                    Text(
-                      'Logout',
-                      style: TextStyle(
-                        fontSize: 15,
-                        color: Colors.grey[700],
-                      ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.logout, color: Colors.black54, size: 22),
+                        const SizedBox(width: 16),
+                        Text(
+                          'Logout',
+                          style: TextStyle(
+                            fontSize: 15,
+                            color: Colors.grey[700],
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
-              ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 

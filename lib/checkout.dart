@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'models/cart_model.dart';
 import 'models/order_model.dart';
+import 'models/auth_model.dart';
 import 'orders.dart';
 
 class CheckoutScreen extends StatefulWidget {
@@ -29,6 +30,22 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   final TextEditingController _fullNameController = TextEditingController();
   final TextEditingController _addressController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    // Auto-fill user information
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authModel = Provider.of<AuthModel>(context, listen: false);
+      final user = authModel.currentUser;
+
+      if (user != null) {
+        _fullNameController.text = user.fullName;
+        _addressController.text = user.address;
+        _phoneController.text = user.phone;
+      }
+    });
+  }
 
   @override
   void dispose() {

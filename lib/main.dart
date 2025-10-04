@@ -3,8 +3,10 @@ import 'package:provider/provider.dart';
 import 'home.dart';
 import 'models/cart_model.dart';
 import 'models/order_model.dart';
+import 'models/auth_model.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const MainApp());
 }
 
@@ -15,6 +17,7 @@ class MainApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        ChangeNotifierProvider(create: (_) => AuthModel()..init()),
         ChangeNotifierProvider(create: (_) => CartModel()),
         ChangeNotifierProvider(create: (_) => OrdersModel()),
       ],

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'components/nav_footer.dart';
+import 'components/login_modal.dart';
 import 'checkout.dart';
 import 'models/cart_model.dart';
+import 'models/auth_model.dart';
 
 class CartScreen extends StatefulWidget {
   const CartScreen({super.key});
@@ -40,7 +42,7 @@ class _CartScreenState extends State<CartScreen> {
     }
   }
 
-  void _checkout(CartModel cart) {
+  void _checkout(CartModel cart) async {
     if (cart.items.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -51,6 +53,25 @@ class _CartScreenState extends State<CartScreen> {
       return;
     }
 
+    final authModel = Provider.of<AuthModel>(context, listen: false);
+
+    // Check if user is already logged in
+    if (!authModel.isLoggedIn) {
+      // Show login modal before checkout
+      final bool? loggedIn = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const LoginModal(),
+      );
+
+      if (loggedIn != true) {
+        // User cancelled login
+        return;
+      }
+    }
+
+    // User is logged in, proceed to checkout
+    if (!mounted) return;
     Navigator.push(
       context,
       MaterialPageRoute(

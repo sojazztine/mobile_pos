@@ -1,13 +1,48 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'dart:io';
 import 'components/nav_footer.dart';
+import 'components/login_modal.dart';
+import 'models/auth_model.dart';
+import 'edit_profile.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
+  String _getInitials(String name) {
+    if (name.isEmpty) return 'G';
+    final parts = name.trim().split(' ');
+    if (parts.length == 1) {
+      return parts[0][0].toUpperCase();
+    }
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+
   void _navigateToManageAccount(BuildContext context) {
-    // TODO: Navigate to manage account screen
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Navigate to Manage Account')),
+    final authModel = Provider.of<AuthModel>(context, listen: false);
+
+    if (!authModel.isLoggedIn) {
+      // Show login modal if not logged in
+      showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const LoginModal(),
+      );
+      return;
+    }
+
+    // Navigate to edit profile screen
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const EditProfileScreen()),
+    );
+  }
+
+  void _showLoginPrompt(BuildContext context) {
+    showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const LoginModal(),
     );
   }
 
@@ -58,7 +93,12 @@ class ProfileScreen extends StatelessWidget {
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
+              final authModel = Provider.of<AuthModel>(context, listen: false);
+              await authModel.logout();
+
+              if (!context.mounted) return;
+
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
@@ -79,43 +119,94 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // User Avatar and Name
-                Row(
+    return Consumer<AuthModel>(
+      builder: (context, authModel, child) {
+        final user = authModel.currentUser;
+
+        return Scaffold(
+          backgroundColor: const Color(0xFFF5F5F5),
+          body: SafeArea(
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.orange[100],
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(
-                        Icons.person,
-                        color: Colors.orange[700],
-                        size: 28,
+                    // User Avatar and Name with Edit/Login Button
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 35,
+                          backgroundColor: Colors.pink[100],
+                          backgroundImage: user?.profileImage != null
+                              ? FileImage(File(user!.profileImage!))
+                              : null,
+                          child: user?.profileImage == null
+                              ? Text(
+                                  _getInitials(user?.fullName ?? 'Guest User'),
+                                  style: TextStyle(
+                                    color: Colors.pink[700],
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                )
+                              : null,
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                user?.fullName ?? 'Guest User',
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                user?.email ?? 'Not logged in',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (authModel.isLoggedIn)
+                          IconButton(
+                            onPressed: () => _navigateToManageAccount(context),
+                            icon: const Icon(Icons.edit, color: Colors.pink),
+                          )
+                        else
+                          ElevatedButton(
+                            onPressed: () => _showLoginPrompt(context),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.pink,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            child: const Text(
+                              'Login',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                          ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    // Profile Title
+                    const Text(
+                      'Profile',
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                  ],
-                ),
-
-                const SizedBox(height: 20),
-
-                // Profile Title
-                const Text(
-                  'Profile',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
 
                 const SizedBox(height: 20),
 
@@ -222,6 +313,8 @@ class ProfileScreen extends StatelessWidget {
         ),
       ),
       bottomNavigationBar: const NavFooter(initialIndex: 4),
+    );
+      },
     );
   }
 
