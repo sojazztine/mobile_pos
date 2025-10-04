@@ -7,6 +7,8 @@ import 'models/cart_model.dart';
 import 'models/auth_model.dart';
 import 'product_details.dart';
 import 'models/dish_model.dart';
+import 'models/product_model.dart';
+import 'database/database_helper.dart';
 import 'orders.dart';
 import 'profile.dart';
 
@@ -17,13 +19,14 @@ class Home extends StatefulWidget {
   State<Home> createState() => _HomeState();
 }
 
-class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
+class _HomeState extends State<Home> with SingleTickerProviderStateMixin, RouteAware {
   late TabController _tabController;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final TextEditingController _searchController = TextEditingController();
   String selectedCategory = 'All';
   String searchQuery = '';
   List<Dish> filteredDishes = [];
+  bool isLoading = true;
 
   final List<String> categories = ['All', 'Popular', 'Appetizers', 'Main Courses', 'Desserts'];
 
@@ -31,8 +34,42 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    filteredDishes = DishData.allDishes;
     _searchController.addListener(_onSearchChanged);
+    _loadDishes();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Reload dishes when screen becomes visible again
+    _loadDishes();
+  }
+
+  Future<void> _loadDishes() async {
+    try {
+      // Get vendor products from database
+      final products = await DatabaseHelper.instance.getAllProducts();
+
+      // Convert products to dishes
+      final vendorDishes = products.map((product) => product.toDish()).toList();
+
+      // Combine with default dishes
+      if (mounted) {
+        setState(() {
+          filteredDishes = [...DishData.allDishes, ...vendorDishes];
+          isLoading = false;
+        });
+        _updateFilteredDishes();
+      }
+    } catch (e) {
+      print('Error loading dishes: $e');
+      if (mounted) {
+        setState(() {
+          filteredDishes = DishData.allDishes;
+          isLoading = false;
+        });
+      }
+    }
   }
 
   void _onSearchChanged() {
@@ -42,21 +79,40 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
     });
   }
 
-  void _updateFilteredDishes() {
-    if (searchQuery.isEmpty) {
-      if (selectedCategory == 'All') {
-        filteredDishes = DishData.allDishes;
+  Future<void> _updateFilteredDishes() async {
+    // Get vendor products from database
+    final products = await DatabaseHelper.instance.getAllProducts();
+    final vendorDishes = products.map((product) => product.toDish()).toList();
+
+    // Combine with default dishes
+    final allDishes = [...DishData.allDishes, ...vendorDishes];
+
+    if (!mounted) return; // Check if widget is still mounted
+
+    setState(() {
+      if (searchQuery.isEmpty) {
+        if (selectedCategory == 'All') {
+          filteredDishes = allDishes;
+        } else {
+          filteredDishes = allDishes
+              .where((dish) => dish.category == selectedCategory)
+              .toList();
+        }
       } else {
-        filteredDishes = DishData.getDishesByCategory(selectedCategory);
+        final lowerQuery = searchQuery.toLowerCase();
+        filteredDishes = allDishes.where((dish) {
+          return dish.name.toLowerCase().contains(lowerQuery) ||
+                 dish.description.toLowerCase().contains(lowerQuery) ||
+                 dish.category.toLowerCase().contains(lowerQuery);
+        }).toList();
+
+        if (selectedCategory != 'All') {
+          filteredDishes = filteredDishes
+              .where((dish) => dish.category == selectedCategory)
+              .toList();
+        }
       }
-    } else {
-      filteredDishes = DishData.searchDishes(searchQuery);
-      if (selectedCategory != 'All') {
-        filteredDishes = filteredDishes
-            .where((dish) => dish.category == selectedCategory)
-            .toList();
-      }
-    }
+    });
   }
 
   void _selectCategory(String category) {
@@ -246,41 +302,47 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
 
             // Content
             Expanded(
-              child: filteredDishes.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.search_off,
-                            size: 64,
-                            color: Colors.grey[300],
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'No dishes found',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                        ],
+              child: isLoading
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                        color: Colors.pink,
                       ),
                     )
-                  : GridView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        mainAxisSpacing: 16,
-                        crossAxisSpacing: 16,
-                        childAspectRatio: 0.7,
-                      ),
-                      itemCount: filteredDishes.length,
-                      itemBuilder: (context, index) {
-                        final dish = filteredDishes[index];
-                        return _buildDishCard(dish);
-                      },
-                    ),
+                  : filteredDishes.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.search_off,
+                                size: 64,
+                                color: Colors.grey[300],
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'No dishes found',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : GridView.builder(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            mainAxisSpacing: 16,
+                            crossAxisSpacing: 16,
+                            childAspectRatio: 0.7,
+                          ),
+                          itemCount: filteredDishes.length,
+                          itemBuilder: (context, index) {
+                            final dish = filteredDishes[index];
+                            return _buildDishCard(dish);
+                          },
+                        ),
             ),
           ],
         ),

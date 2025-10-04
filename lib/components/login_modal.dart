@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'signup_modal.dart';
 import '../models/auth_model.dart';
+import '../admin_dashboard.dart';
+import '../vendor_dashboard.dart';
 
 class LoginModal extends StatefulWidget {
   const LoginModal({super.key});
@@ -35,7 +37,27 @@ class _LoginModalState extends State<LoginModal> {
       if (!mounted) return;
 
       if (success) {
-        Navigator.pop(context, true);
+        // Check user role and navigate accordingly
+        if (authModel.isAdmin) {
+          // Navigate to admin dashboard
+          Navigator.pop(context); // Close login modal
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => const AdminDashboard()),
+            (route) => false,
+          );
+        } else if (authModel.isVendor) {
+          // Navigate to vendor dashboard
+          Navigator.pop(context); // Close login modal
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => const VendorDashboard()),
+            (route) => false,
+          );
+        } else {
+          // Regular user - just close modal
+          Navigator.pop(context, true);
+        }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

@@ -48,13 +48,14 @@ class _SignUpModalState extends State<SignUpModal> {
     if (_formKey.currentState!.validate()) {
       final authModel = Provider.of<AuthModel>(context, listen: false);
 
-      // Create user account in database
+      // Create user account in database (always as 'user' role)
       final success = await authModel.signUp(
         email: _emailController.text.trim(),
         password: _passwordController.text,
         fullName: _fullNameController.text.trim(),
         phone: _phoneController.text.trim(),
         address: _addressController.text.trim(),
+        role: 'user',
       );
 
       if (!mounted) return;

@@ -9,6 +9,8 @@ class AuthModel extends ChangeNotifier {
 
   User? get currentUser => _currentUser;
   bool get isLoggedIn => _isLoggedIn;
+  bool get isAdmin => _currentUser?.isAdmin ?? false;
+  bool get isVendor => _currentUser?.isVendor ?? false;
 
   // Initialize - check if user is already logged in
   Future<void> init() async {
@@ -32,6 +34,7 @@ class AuthModel extends ChangeNotifier {
     required String fullName,
     required String phone,
     required String address,
+    String role = 'user',
   }) async {
     // Check if email already exists
     final emailExists = await DatabaseHelper.instance.emailExists(email);
@@ -46,6 +49,7 @@ class AuthModel extends ChangeNotifier {
       fullName: fullName,
       phone: phone,
       address: address,
+      role: role,
     );
 
     final createdUser = await DatabaseHelper.instance.createUser(user);

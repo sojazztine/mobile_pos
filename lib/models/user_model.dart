@@ -6,6 +6,7 @@ class User {
   final String phone;
   final String address;
   final String? profileImage;
+  final String role; // 'admin', 'vendor', or 'user'
   final DateTime createdAt;
 
   User({
@@ -16,6 +17,7 @@ class User {
     required this.phone,
     required this.address,
     this.profileImage,
+    this.role = 'user', // default role is 'user'
     DateTime? createdAt,
   }) : createdAt = createdAt ?? DateTime.now();
 
@@ -29,6 +31,7 @@ class User {
       'phone': phone,
       'address': address,
       'profileImage': profileImage,
+      'role': role,
       'createdAt': createdAt.toIso8601String(),
     };
   }
@@ -43,6 +46,7 @@ class User {
       phone: map['phone'] as String,
       address: map['address'] as String,
       profileImage: map['profileImage'] as String?,
+      role: map['role'] as String? ?? 'user',
       createdAt: DateTime.parse(map['createdAt'] as String),
     );
   }
@@ -56,6 +60,7 @@ class User {
     String? phone,
     String? address,
     String? profileImage,
+    String? role,
     DateTime? createdAt,
   }) {
     return User(
@@ -66,7 +71,13 @@ class User {
       phone: phone ?? this.phone,
       address: address ?? this.address,
       profileImage: profileImage ?? this.profileImage,
+      role: role ?? this.role,
       createdAt: createdAt ?? this.createdAt,
     );
   }
+
+  // Helper methods to check user role
+  bool get isAdmin => role == 'admin';
+  bool get isVendor => role == 'vendor';
+  bool get isRegularUser => role == 'user';
 }

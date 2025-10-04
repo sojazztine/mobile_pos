@@ -3,6 +3,7 @@ import 'package:path/path.dart';
 import 'package:crypto/crypto.dart';
 import 'dart:convert';
 import '../models/user_model.dart';
+import '../models/product_model.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._init();
@@ -22,12 +23,14 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 1,
+      version: 4,
       onCreate: _createDB,
+      onUpgrade: _upgradeDB,
     );
   }
 
   Future<void> _createDB(Database db, int version) async {
+    // Create users table
     await db.execute('''
       CREATE TABLE users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -37,9 +40,135 @@ class DatabaseHelper {
         phone TEXT NOT NULL,
         address TEXT NOT NULL,
         profileImage TEXT,
+        role TEXT DEFAULT 'user',
         createdAt TEXT NOT NULL
       )
     ''');
+
+    // Create products table
+    await db.execute('''
+      CREATE TABLE products (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        description TEXT NOT NULL,
+        price REAL NOT NULL,
+        category TEXT NOT NULL,
+        colorValue INTEGER NOT NULL,
+        vendorId INTEGER NOT NULL,
+        stockQuantity INTEGER DEFAULT 0,
+        createdAt TEXT NOT NULL,
+        isActive INTEGER DEFAULT 1,
+        FOREIGN KEY (vendorId) REFERENCES users (id) ON DELETE CASCADE
+      )
+    ''');
+
+    // Create default admin user
+    await _createDefaultAdmin(db);
+  }
+
+  Future<void> _upgradeDB(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      // Add role column if upgrading from version 1
+      await db.execute('ALTER TABLE users ADD COLUMN role TEXT DEFAULT "user"');
+      await _createDefaultAdmin(db);
+    }
+    if (oldVersion < 3) {
+      // Create products table if upgrading from version 2
+      await db.execute('''
+        CREATE TABLE products (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          description TEXT NOT NULL,
+          price REAL NOT NULL,
+          category TEXT NOT NULL,
+          colorValue INTEGER NOT NULL,
+          vendorId INTEGER NOT NULL,
+          stockQuantity INTEGER DEFAULT 0,
+          createdAt TEXT NOT NULL,
+          isActive INTEGER DEFAULT 1,
+          FOREIGN KEY (vendorId) REFERENCES users (id) ON DELETE CASCADE
+        )
+      ''');
+    }
+    if (oldVersion < 4) {
+      // Add stockQuantity column if products table exists without it
+      try {
+        await db.execute('ALTER TABLE products ADD COLUMN stockQuantity INTEGER DEFAULT 0');
+      } catch (e) {
+        // Column might already exist, ignore error
+        print('Note: stockQuantity column may already exist: $e');
+      }
+    }
+  }
+
+  Future<void> _createDefaultAdmin(Database db) async {
+    // Check if admin already exists
+    final adminExists = await db.query(
+      'users',
+      where: 'email = ?',
+      whereArgs: ['admin@codecrave.com'],
+    );
+
+    if (adminExists.isEmpty) {
+      // Create default admin user
+      final adminUser = User(
+        email: 'admin@codecrave.com',
+        password: _hashPassword('admin123'),
+        fullName: 'Admin',
+        phone: '0000000000',
+        address: 'Admin Office',
+        role: 'admin',
+      );
+
+      await db.insert('users', adminUser.toMap());
+    }
+
+    // Create default vendor accounts if they don't exist
+    await _createDefaultVendors(db);
+  }
+
+  Future<void> _createDefaultVendors(Database db) async {
+    // List of default vendors to create
+    final defaultVendors = [
+      {
+        'email': 'vendor1@codecrave.com',
+        'password': 'vendor123',
+        'fullName': 'John\'s Restaurant',
+        'phone': '1234567890',
+        'address': '123 Main Street, City',
+      },
+      {
+        'email': 'vendor2@codecrave.com',
+        'password': 'vendor123',
+        'fullName': 'Maria\'s Kitchen',
+        'phone': '0987654321',
+        'address': '456 Oak Avenue, Town',
+      },
+      // Add more vendors here as needed
+    ];
+
+    for (var vendorData in defaultVendors) {
+      // Check if vendor already exists
+      final vendorExists = await db.query(
+        'users',
+        where: 'email = ?',
+        whereArgs: [vendorData['email']],
+      );
+
+      if (vendorExists.isEmpty) {
+        // Create vendor user
+        final vendorUser = User(
+          email: vendorData['email']!,
+          password: _hashPassword(vendorData['password']!),
+          fullName: vendorData['fullName']!,
+          phone: vendorData['phone']!,
+          address: vendorData['address']!,
+          role: 'vendor',
+        );
+
+        await db.insert('users', vendorUser.toMap());
+      }
+    }
   }
 
   // Hash password
@@ -137,6 +266,119 @@ class DatabaseHelper {
   Future<bool> emailExists(String email) async {
     final user = await getUserByEmail(email);
     return user != null;
+  }
+
+  // ============ PRODUCT OPERATIONS ============
+
+  // Create product
+  Future<Product?> createProduct(Product product) async {
+    final db = await database;
+
+    try {
+      final id = await db.insert(
+        'products',
+        product.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.abort,
+      );
+
+      return product.copyWith(id: id);
+    } catch (e) {
+      print('Error creating product: $e');
+      return null;
+    }
+  }
+
+  // Get all products
+  Future<List<Product>> getAllProducts() async {
+    final db = await database;
+
+    final maps = await db.query('products', where: 'isActive = ?', whereArgs: [1]);
+
+    return maps.map((map) => Product.fromMap(map)).toList();
+  }
+
+  // Get products by vendor
+  Future<List<Product>> getProductsByVendor(int vendorId) async {
+    final db = await database;
+
+    final maps = await db.query(
+      'products',
+      where: 'vendorId = ?',
+      whereArgs: [vendorId],
+      orderBy: 'createdAt DESC',
+    );
+
+    return maps.map((map) => Product.fromMap(map)).toList();
+  }
+
+  // Get products by category
+  Future<List<Product>> getProductsByCategory(String category) async {
+    final db = await database;
+
+    final maps = await db.query(
+      'products',
+      where: 'category = ? AND isActive = ?',
+      whereArgs: [category, 1],
+    );
+
+    return maps.map((map) => Product.fromMap(map)).toList();
+  }
+
+  // Update product
+  Future<int> updateProduct(Product product) async {
+    final db = await database;
+
+    return await db.update(
+      'products',
+      product.toMap(),
+      where: 'id = ?',
+      whereArgs: [product.id],
+    );
+  }
+
+  // Delete product
+  Future<int> deleteProduct(int id) async {
+    final db = await database;
+
+    return await db.delete(
+      'products',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  // Update product stock
+  Future<bool> updateProductStock(int productId, int quantity) async {
+    final db = await database;
+
+    try {
+      // Get current stock
+      final maps = await db.query(
+        'products',
+        where: 'id = ?',
+        whereArgs: [productId],
+      );
+
+      if (maps.isEmpty) return false;
+
+      final product = Product.fromMap(maps.first);
+      final newStock = product.stockQuantity - quantity;
+
+      if (newStock < 0) return false; // Not enough stock
+
+      // Update stock
+      await db.update(
+        'products',
+        {'stockQuantity': newStock},
+        where: 'id = ?',
+        whereArgs: [productId],
+      );
+
+      return true;
+    } catch (e) {
+      print('Error updating stock: $e');
+      return false;
+    }
   }
 
   // Close database
