@@ -1,20 +1,29 @@
 import 'package:flutter/foundation.dart';
 
 class Order {
-  final String id;
+  final int? id;
+  final int userId;
+  final int vendorId;
+  final int? riderId;
   final String restaurant;
   final String date;
   final String description;
   final double price;
-  final String status;
-  final List<Map<String, dynamic>> items;
+  final String status; // 'pending', 'accepted', 'preparing', 'ready', 'delivering', 'completed', 'cancelled'
+  final List<Map<String, dynamic>> items; // [{productId, name, quantity, price}]
   final String customerName;
   final String deliveryAddress;
   final String phoneNumber;
   final String paymentMethod;
+  final DateTime createdAt;
+  final DateTime? acceptedAt;
+  final DateTime? completedAt;
 
   Order({
-    required this.id,
+    this.id,
+    required this.userId,
+    required this.vendorId,
+    this.riderId,
     required this.restaurant,
     required this.date,
     this.description = '',
@@ -25,71 +34,169 @@ class Order {
     this.deliveryAddress = '123 Main Street, Apt 4B\nSan Francisco, CA 94105',
     this.phoneNumber = '+1 (555) 123-4567',
     this.paymentMethod = 'Credit Card',
-  });
+    DateTime? createdAt,
+    this.acceptedAt,
+    this.completedAt,
+  }) : createdAt = createdAt ?? DateTime.now();
+
+  // Convert Order to Map for database
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'userId': userId,
+      'vendorId': vendorId,
+      'riderId': riderId,
+      'restaurant': restaurant,
+      'date': date,
+      'description': description,
+      'price': price,
+      'status': status,
+      'items': items.toString(), // Store as string in SQLite
+      'customerName': customerName,
+      'deliveryAddress': deliveryAddress,
+      'phoneNumber': phoneNumber,
+      'paymentMethod': paymentMethod,
+      'createdAt': createdAt.toIso8601String(),
+      'acceptedAt': acceptedAt?.toIso8601String(),
+      'completedAt': completedAt?.toIso8601String(),
+    };
+  }
+
+  // Create Order from Map
+  factory Order.fromMap(Map<String, dynamic> map) {
+    // Parse items string back to List<Map<String, dynamic>>
+    List<Map<String, dynamic>> parseItems(String itemsStr) {
+      try {
+        // Remove brackets and split by },{
+        final itemsList = itemsStr
+            .substring(1, itemsStr.length - 1)
+            .split('}, {')
+            .map((item) {
+          final cleanItem = item.replaceAll('{', '').replaceAll('}', '');
+          final pairs = cleanItem.split(', ');
+          final itemMap = <String, dynamic>{};
+
+          for (var pair in pairs) {
+            final keyValue = pair.split(': ');
+            if (keyValue.length == 2) {
+              final key = keyValue[0].trim();
+              final value = keyValue[1].trim();
+
+              if (key == 'productId' || key == 'quantity') {
+                itemMap[key] = int.tryParse(value) ?? 0;
+              } else if (key == 'price') {
+                itemMap[key] = double.tryParse(value) ?? 0.0;
+              } else {
+                itemMap[key] = value;
+              }
+            }
+          }
+          return itemMap;
+        }).toList();
+
+        return itemsList;
+      } catch (e) {
+        return [];
+      }
+    }
+
+    return Order(
+      id: map['id'] as int?,
+      userId: map['userId'] as int,
+      vendorId: map['vendorId'] as int,
+      riderId: map['riderId'] as int?,
+      restaurant: map['restaurant'] as String,
+      date: map['date'] as String,
+      description: map['description'] as String? ?? '',
+      price: map['price'] as double,
+      status: map['status'] as String,
+      items: parseItems(map['items'] as String),
+      customerName: map['customerName'] as String? ?? 'John Doe',
+      deliveryAddress: map['deliveryAddress'] as String? ?? '',
+      phoneNumber: map['phoneNumber'] as String? ?? '',
+      paymentMethod: map['paymentMethod'] as String? ?? 'Credit Card',
+      createdAt: DateTime.parse(map['createdAt'] as String),
+      acceptedAt: map['acceptedAt'] != null ? DateTime.parse(map['acceptedAt'] as String) : null,
+      completedAt: map['completedAt'] != null ? DateTime.parse(map['completedAt'] as String) : null,
+    );
+  }
+
+  // Create a copy with updated fields
+  Order copyWith({
+    int? id,
+    int? userId,
+    int? vendorId,
+    int? riderId,
+    String? restaurant,
+    String? date,
+    String? description,
+    double? price,
+    String? status,
+    List<Map<String, dynamic>>? items,
+    String? customerName,
+    String? deliveryAddress,
+    String? phoneNumber,
+    String? paymentMethod,
+    DateTime? createdAt,
+    DateTime? acceptedAt,
+    DateTime? completedAt,
+  }) {
+    return Order(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      vendorId: vendorId ?? this.vendorId,
+      riderId: riderId ?? this.riderId,
+      restaurant: restaurant ?? this.restaurant,
+      date: date ?? this.date,
+      description: description ?? this.description,
+      price: price ?? this.price,
+      status: status ?? this.status,
+      items: items ?? this.items,
+      customerName: customerName ?? this.customerName,
+      deliveryAddress: deliveryAddress ?? this.deliveryAddress,
+      phoneNumber: phoneNumber ?? this.phoneNumber,
+      paymentMethod: paymentMethod ?? this.paymentMethod,
+      createdAt: createdAt ?? this.createdAt,
+      acceptedAt: acceptedAt ?? this.acceptedAt,
+      completedAt: completedAt ?? this.completedAt,
+    );
+  }
 }
 
 class OrdersModel extends ChangeNotifier {
-  final List<Order> _orders = [];
+  List<Order> _orders = [];
 
   List<Order> get activeOrders {
-    return _orders.where((order) => order.status != 'Delivered').toList();
+    return _orders.where((order) => order.status != 'completed' && order.status != 'cancelled').toList();
   }
 
   List<Order> get pastOrders {
-    return _orders.where((order) => order.status == 'Delivered').toList();
+    return _orders.where((order) => order.status == 'completed' || order.status == 'cancelled').toList();
   }
 
-  void addOrder({
-    required List<Map<String, dynamic>> items,
-    required double total,
-    required String customerName,
-    required String deliveryAddress,
-    required String phoneNumber,
-    required String paymentMethod,
-  }) {
-    final orderId = DateTime.now().millisecondsSinceEpoch.toString();
-    final orderDate = _formatDate(DateTime.now());
+  List<Order> get allOrders => _orders;
 
-    // Get restaurant name from first item (in real app, this would be more sophisticated)
-    final restaurant = 'Food Palace';
+  void setOrders(List<Order> orders) {
+    _orders = orders;
+    notifyListeners();
+  }
 
-    final order = Order(
-      id: orderId.substring(orderId.length - 5),
-      restaurant: restaurant,
-      date: orderDate,
-      description: items.map((item) => item['name']).join(', '),
-      price: total,
-      status: 'Preparing',
-      items: items,
-      customerName: customerName,
-      deliveryAddress: deliveryAddress,
-      phoneNumber: phoneNumber,
-      paymentMethod: paymentMethod,
-    );
-
+  void addOrder(Order order) {
     _orders.insert(0, order);
     notifyListeners();
   }
 
-  void updateOrderStatus(String orderId, String newStatus) {
-    final index = _orders.indexWhere((order) => order.id == orderId);
+  void updateOrder(Order updatedOrder) {
+    final index = _orders.indexWhere((order) => order.id == updatedOrder.id);
     if (index != -1) {
-      final oldOrder = _orders[index];
-      _orders[index] = Order(
-        id: oldOrder.id,
-        restaurant: oldOrder.restaurant,
-        date: oldOrder.date,
-        description: oldOrder.description,
-        price: oldOrder.price,
-        status: newStatus,
-        items: oldOrder.items,
-        customerName: oldOrder.customerName,
-        deliveryAddress: oldOrder.deliveryAddress,
-        phoneNumber: oldOrder.phoneNumber,
-        paymentMethod: oldOrder.paymentMethod,
-      );
+      _orders[index] = updatedOrder;
       notifyListeners();
     }
+  }
+
+  void removeOrder(int orderId) {
+    _orders.removeWhere((order) => order.id == orderId);
+    notifyListeners();
   }
 
   String _formatDate(DateTime date) {

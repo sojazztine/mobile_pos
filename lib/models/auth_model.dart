@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../database/database_helper.dart';
+import '../services/database_service.dart';
 import 'user_model.dart';
 
 class AuthModel extends ChangeNotifier {
@@ -11,6 +11,7 @@ class AuthModel extends ChangeNotifier {
   bool get isLoggedIn => _isLoggedIn;
   bool get isAdmin => _currentUser?.isAdmin ?? false;
   bool get isVendor => _currentUser?.isVendor ?? false;
+  bool get isRider => _currentUser?.isRider ?? false;
 
   // Initialize - check if user is already logged in
   Future<void> init() async {
@@ -18,7 +19,7 @@ class AuthModel extends ChangeNotifier {
     final userId = prefs.getInt('logged_in_user_id');
 
     if (userId != null) {
-      final user = await DatabaseHelper.instance.getUserById(userId);
+      final user = await DatabaseService.instance.getUserById(userId);
       if (user != null) {
         _currentUser = user;
         _isLoggedIn = true;
@@ -37,7 +38,7 @@ class AuthModel extends ChangeNotifier {
     String role = 'user',
   }) async {
     // Check if email already exists
-    final emailExists = await DatabaseHelper.instance.emailExists(email);
+    final emailExists = await DatabaseService.instance.emailExists(email);
     if (emailExists) {
       return false;
     }
@@ -52,7 +53,7 @@ class AuthModel extends ChangeNotifier {
       role: role,
     );
 
-    final createdUser = await DatabaseHelper.instance.createUser(user);
+    final createdUser = await DatabaseService.instance.createUser(user);
     if (createdUser != null) {
       _currentUser = createdUser;
       _isLoggedIn = true;
@@ -70,7 +71,7 @@ class AuthModel extends ChangeNotifier {
 
   // Login user
   Future<bool> login(String email, String password) async {
-    final user = await DatabaseHelper.instance.loginUser(email, password);
+    final user = await DatabaseService.instance.loginUser(email, password);
 
     if (user != null) {
       _currentUser = user;
@@ -115,7 +116,7 @@ class AuthModel extends ChangeNotifier {
       profileImage: profileImage ?? _currentUser!.profileImage,
     );
 
-    final result = await DatabaseHelper.instance.updateUser(updatedUser);
+    final result = await DatabaseService.instance.updateUser(updatedUser);
     if (result > 0) {
       _currentUser = updatedUser;
       notifyListeners();
@@ -123,5 +124,11 @@ class AuthModel extends ChangeNotifier {
     }
 
     return false;
+  }
+
+  // Update current user directly (for updating profile image, etc.)
+  Future<void> updateCurrentUser(User user) async {
+    _currentUser = user;
+    notifyListeners();
   }
 }

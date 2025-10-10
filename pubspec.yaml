@@ -99,8 +99,31 @@ flutter:
 
 # Flutter Launcher Icons Configuration
 flutter_launcher_icons:
+  # Platforms
   android: true
   ios: true
-  image_path: "assets/icon/codeCraveLogo.png"
-  adaptive_icon_background: "#FFFFFF"
-  adaptive_icon_foreground: "assets/icon/codeCraveLogo.png"
+
+  # Main icon (use your EasyAppIcon PNG here)
+  # Replace this with your icon from EasyAppIcon: "assets/icon/app_icon.png"
+  image_path: "assets/icon/koala.png"
+
+  # Android Adaptive Icon (for Android 8.0+)
+  # Background color - CodeCrave brand pink
+  adaptive_icon_background: "#E91E63"
+  adaptive_icon_foreground: "assets/icon/koala.png"
+
+  # iOS Configuration
+  remove_alpha_ios: true
+
+  # Web Configuration
+  web:
+    generate: true
+    image_path: "assets/icon/koala.png"
+    background_color: "#E91E63"
+    theme_color: "#E91E63"
+
+  # Windows Configuration
+  windows:
+    generate: true
+    image_path: "assets/icon/koala.png"
+    icon_size: 48
