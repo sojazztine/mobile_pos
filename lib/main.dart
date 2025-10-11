@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:provider/provider.dart';
 
 // Screens
@@ -19,6 +20,8 @@ import 'constants/app_strings.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Disable debug painting to remove yellow/black debug borders
+  debugPaintSizeEnabled = false;
   runApp(const MainApp());
 }
 

@@ -1,6 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/cart_model.dart';
+import '../../models/dish_model.dart';
 
 class ProductDetailsScreen extends StatefulWidget {
   final String productName;
@@ -8,6 +10,7 @@ class ProductDetailsScreen extends StatefulWidget {
   final double basePrice;
   final String imageType;
   final Color backgroundColor;
+  final String? imagePath;
 
   const ProductDetailsScreen({
     super.key,
@@ -16,6 +19,7 @@ class ProductDetailsScreen extends StatefulWidget {
     required this.basePrice,
     required this.imageType,
     required this.backgroundColor,
+    this.imagePath,
   });
 
   @override
@@ -85,6 +89,16 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     Navigator.pop(context);
   }
 
+  DecorationImage? _buildImage() {
+    if (widget.imagePath != null && widget.imagePath!.isNotEmpty) {
+      return DecorationImage(
+        image: FileImage(File(widget.imagePath!)),
+        fit: BoxFit.cover,
+      );
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -113,18 +127,23 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Product Image
+                  // Product Image or Vendor Profile
                   Container(
                     width: double.infinity,
                     height: 250,
-                    color: widget.backgroundColor,
-                    child: Center(
-                      child: Icon(
-                        Icons.fastfood,
-                        size: 120,
-                        color: Colors.white.withOpacity(0.7),
-                      ),
+                    decoration: BoxDecoration(
+                      color: widget.backgroundColor,
+                      image: _buildImage(),
                     ),
+                    child: _buildImage() == null
+                        ? Center(
+                            child: Icon(
+                              Icons.fastfood,
+                              size: 120,
+                              color: Colors.white.withOpacity(0.7),
+                            ),
+                          )
+                        : null,
                   ),
 
                   Padding(
@@ -141,7 +160,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                           ),
                         ),
 
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 16),
 
                         // Description
                         Text(
@@ -155,47 +174,63 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
 
                         const SizedBox(height: 24),
 
-                        // Customize Section
-                        const Text(
-                          'Customize',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
+                        // Customize Section (only if hasCustomization is true)
+                        // Always show customization options
+                        ...[
+                          const Text(
+                            'Size',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        ),
 
-                        const SizedBox(height: 12),
+                          const SizedBox(height: 12),
 
-                        // Size Options
-                        Row(
-                          children: [
-                            _buildSizeOption('Single'),
-                            const SizedBox(width: 12),
-                            _buildSizeOption('Double'),
-                            const SizedBox(width: 12),
-                            _buildSizeOption('Triple'),
-                          ],
-                        ),
-
-                        const SizedBox(height: 24),
-
-                        // Add-ons Section
-                        const Text(
-                          'Add-ons',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
+                          // Size Options
+                          Row(
+                            children: [
+                              _buildSizeOption('Single'),
+                              const SizedBox(width: 12),
+                              _buildSizeOption('Double'),
+                              const SizedBox(width: 12),
+                              _buildSizeOption('Triple'),
+                            ],
                           ),
-                        ),
 
-                        const SizedBox(height: 12),
+                          const SizedBox(height: 24),
 
-                        // Add-ons List
-                        ...addonPrices.keys.map((addon) {
-                          return _buildAddonOption(addon, addonPrices[addon]!);
-                        }).toList(),
+                          // Add-ons Section
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              _buildSizeOption('Single'),
+                              const SizedBox(width: 10),
+                              _buildSizeOption('Double'),
+                              const SizedBox(width: 10),
+                              _buildSizeOption('Triple'),
+                            ],
+                          ),
 
-                        const SizedBox(height: 24),
+                          const SizedBox(height: 24),
+
+                          const Text(
+                            'Add-ons',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+
+                          const SizedBox(height: 12),
+
+                          // Add-ons List
+                          ...addonPrices.keys.map((addon) {
+                            return _buildAddonOption(addon, addonPrices[addon]!);
+                          }),
+
+                          const SizedBox(height: 24),
+                        ],
 
                         // Quantity Section
                         const Text(

@@ -66,6 +66,8 @@ class _VendorAddProductState extends State<VendorAddProduct> {
 
       final authModel = Provider.of<AuthModel>(context, listen: false);
       final vendorId = authModel.currentUser?.id;
+      final vendorName = authModel.currentUser?.fullName ?? 'Unknown Store';
+      final vendorImage = authModel.currentUser?.profileImage;
 
       if (vendorId == null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -92,10 +94,13 @@ class _VendorAddProductState extends State<VendorAddProduct> {
         description: _descriptionController.text.trim(),
         price: double.parse(_priceController.text),
         category: _selectedCategory,
-        colorValue: _selectedColor.value,
+        colorValue: _selectedColor.toARGB32(),
         vendorId: vendorId,
+        vendorName: vendorName,
+        vendorImage: vendorImage,
         stockQuantity: int.parse(_stockController.text),
         imagePath: savedImagePath,
+        hasCustomization: false, // Default to no customization
       );
 
       final createdProduct = await DatabaseService.instance.createProduct(product);

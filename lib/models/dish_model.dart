@@ -7,6 +7,9 @@ class Dish {
   final String imageType;
   final int colorValue;
   final String? imagePath; // Path to product image file
+  final String? vendorName; // Store/vendor name
+  final String? vendorImage; // Vendor profile image
+  final bool hasCustomization; // Whether product has size/add-ons customization
 
   Dish({
     required this.id,
@@ -17,6 +20,9 @@ class Dish {
     required this.imageType,
     required this.colorValue,
     this.imagePath,
+    this.vendorName,
+    this.vendorImage,
+    this.hasCustomization = false,
   });
 }
 

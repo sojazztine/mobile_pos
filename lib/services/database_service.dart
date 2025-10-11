@@ -24,7 +24,7 @@ class DatabaseService {
 
     return await openDatabase(
       path,
-      version: 7,
+      version: 9,
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
     );
@@ -57,8 +57,11 @@ class DatabaseService {
         category TEXT NOT NULL,
         colorValue INTEGER NOT NULL,
         vendorId INTEGER NOT NULL,
+        vendorName TEXT NOT NULL,
+        vendorImage TEXT,
         stockQuantity INTEGER DEFAULT 0,
         imagePath TEXT,
+        hasCustomization INTEGER DEFAULT 0,
         createdAt TEXT NOT NULL,
         isActive INTEGER DEFAULT 1,
         FOREIGN KEY (vendorId) REFERENCES users (id) ON DELETE CASCADE
@@ -172,6 +175,69 @@ class DatabaseService {
       } catch (e) {
         // Column might already exist, ignore error
         print('Note: imagePath column may already exist: $e');
+      }
+    }
+    if (oldVersion < 8) {
+      // Add vendorName column to products table
+      try {
+        await db.execute('ALTER TABLE products ADD COLUMN vendorName TEXT DEFAULT "Unknown Store"');
+
+        // Update existing products with vendor names from users table
+        final products = await db.query('products');
+        for (var product in products) {
+          final vendorId = product['vendorId'] as int;
+          final vendorQuery = await db.query(
+            'users',
+            columns: ['fullName'],
+            where: 'id = ?',
+            whereArgs: [vendorId],
+          );
+
+          if (vendorQuery.isNotEmpty) {
+            final vendorName = vendorQuery.first['fullName'] as String;
+            await db.update(
+              'products',
+              {'vendorName': vendorName},
+              where: 'id = ?',
+              whereArgs: [product['id']],
+            );
+          }
+        }
+      } catch (e) {
+        // Column might already exist, ignore error
+        print('Note: vendorName column may already exist: $e');
+      }
+    }
+    if (oldVersion < 9) {
+      // Add vendorImage and hasCustomization columns to products table
+      try {
+        await db.execute('ALTER TABLE products ADD COLUMN vendorImage TEXT');
+        await db.execute('ALTER TABLE products ADD COLUMN hasCustomization INTEGER DEFAULT 0');
+
+        // Update existing products with vendor profile images from users table
+        final products = await db.query('products');
+        for (var product in products) {
+          final vendorId = product['vendorId'] as int;
+          final vendorQuery = await db.query(
+            'users',
+            columns: ['profileImage'],
+            where: 'id = ?',
+            whereArgs: [vendorId],
+          );
+
+          if (vendorQuery.isNotEmpty && vendorQuery.first['profileImage'] != null) {
+            final vendorImage = vendorQuery.first['profileImage'] as String;
+            await db.update(
+              'products',
+              {'vendorImage': vendorImage},
+              where: 'id = ?',
+              whereArgs: [product['id']],
+            );
+          }
+        }
+      } catch (e) {
+        // Columns might already exist, ignore error
+        print('Note: vendorImage/hasCustomization columns may already exist: $e');
       }
     }
   }

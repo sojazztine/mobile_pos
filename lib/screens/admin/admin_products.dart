@@ -252,15 +252,20 @@ class _AdminProductsState extends State<AdminProducts> {
 
                 final authModel = Provider.of<AuthModel>(context, listen: false);
                 final adminId = authModel.currentUser?.id ?? 1;
+                final adminName = authModel.currentUser?.fullName ?? 'Admin';
+                final adminImage = authModel.currentUser?.profileImage;
 
                 final product = Product(
                   name: nameController.text.trim(),
                   description: descriptionController.text.trim(),
                   price: double.parse(priceController.text),
                   category: selectedCategory,
-                  colorValue: selectedColor.value,
+                  colorValue: selectedColor.toARGB32(),
                   vendorId: adminId,
+                  vendorName: adminName,
+                  vendorImage: adminImage,
                   stockQuantity: int.parse(stockController.text),
+                  hasCustomization: false, // Default to no customization
                 );
 
                 await DatabaseService.instance.createProduct(product);

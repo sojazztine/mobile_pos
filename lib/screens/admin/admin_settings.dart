@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/auth_model.dart';
-import '../common/home.dart';
+import '../common/main_navigation.dart';
 import 'admin_dashboard.dart';
 
 class AdminSettings extends StatelessWidget {
@@ -28,7 +28,7 @@ class AdminSettings extends StatelessWidget {
               Navigator.pop(context);
               Navigator.pushAndRemoveUntil(
                 context,
-                MaterialPageRoute(builder: (context) => const Home()),
+                MaterialPageRoute(builder: (context) => const MainNavigation()),
                 (route) => false,
               );
             },

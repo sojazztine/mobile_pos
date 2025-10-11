@@ -6,7 +6,6 @@ import '../../models/cart_model.dart';
 import '../../models/auth_model.dart';
 import 'product_details.dart';
 import '../../models/dish_model.dart';
-import '../../models/product_model.dart';
 import '../../services/database_service.dart';
 import 'orders.dart';
 import 'profile.dart';
@@ -333,21 +332,7 @@ class _HomeState extends State<Home>
                         ],
                       ),
                     )
-                  : GridView.builder(
-                      padding: const EdgeInsets.fromLTRB(16.0, 0, 16.0, 80.0),
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            mainAxisSpacing: 16,
-                            crossAxisSpacing: 16,
-                            childAspectRatio: 0.7,
-                          ),
-                      itemCount: filteredDishes.length,
-                      itemBuilder: (context, index) {
-                        final dish = filteredDishes[index];
-                        return _buildDishCard(dish);
-                      },
-                    ),
+                  : _buildDishesGroupedByStore(),
             ),
           ],
         ),
@@ -355,93 +340,90 @@ class _HomeState extends State<Home>
     );
   }
 
-  Widget _buildPopularDishCard(
-    String title,
-    String description,
-    String price,
-    Color bgColor,
-  ) {
-    final priceValue = double.parse(price.replaceAll('\$', ''));
-    final itemId = title.toLowerCase().replaceAll(' ', '_');
+  Widget _buildDishesGroupedByStore() {
+    // Group dishes by store name
+    Map<String, List<Dish>> dishesByStore = {};
 
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ProductDetailsScreen(
-              productName: title,
-              description: description,
-              basePrice: priceValue,
-              imageType: 'food',
-              backgroundColor: bgColor,
-            ),
-          ),
-        );
-      },
-      child: Container(
-        width: 180,
-        margin: const EdgeInsets.symmetric(horizontal: 4),
-        child: Column(
+    for (var dish in filteredDishes) {
+      final storeName = dish.vendorName ?? 'CodeCrave Specials';
+      if (!dishesByStore.containsKey(storeName)) {
+        dishesByStore[storeName] = [];
+      }
+      dishesByStore[storeName]!.add(dish);
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(16.0, 0, 16.0, 80.0),
+      itemCount: dishesByStore.keys.length,
+      itemBuilder: (context, index) {
+        final storeName = dishesByStore.keys.elementAt(index);
+        final dishes = dishesByStore[storeName]!;
+
+        return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Stack(
-              children: [
-                Container(
-                  height: 140,
-                  decoration: BoxDecoration(
-                    color: bgColor,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-                Positioned(
-                  bottom: 8,
-                  right: 8,
-                  child: Container(
-                    decoration: const BoxDecoration(
-                      color: Colors.pink,
-                      shape: BoxShape.circle,
+            // Store name header
+            Padding(
+              padding: const EdgeInsets.only(top: 16, bottom: 12),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.pink[50],
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                    child: IconButton(
-                      icon: const Icon(Icons.add, color: Colors.white),
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => ProductDetailsScreen(
-                              productName: title,
-                              description: description,
-                              basePrice: priceValue,
-                              imageType: 'food',
-                              backgroundColor: bgColor,
-                            ),
+                    child: Icon(
+                      Icons.store,
+                      color: Colors.pink[700],
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          storeName,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
                           ),
-                        );
-                      },
+                        ),
+                        Text(
+                          '${dishes.length} ${dishes.length == 1 ? 'item' : 'items'}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
+            ),
+            // Grid of dishes for this store
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                mainAxisSpacing: 16,
+                crossAxisSpacing: 16,
+                childAspectRatio: 0.7,
+              ),
+              itemCount: dishes.length,
+              itemBuilder: (context, dishIndex) {
+                return _buildDishCard(dishes[dishIndex]);
+              },
             ),
             const SizedBox(height: 8),
-            Text(
-              title,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-            ),
-            Text(
-              description,
-              style: TextStyle(color: Colors.grey[600], fontSize: 12),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              price,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-            ),
           ],
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -483,7 +465,8 @@ class _HomeState extends State<Home>
               description: dish.description,
               basePrice: dish.price,
               imageType: dish.imageType,
-              backgroundColor: bgColor,
+              backgroundColor: Color(dish.colorValue),
+              imagePath: dish.imagePath,
             ),
           ),
         );
@@ -557,7 +540,8 @@ class _HomeState extends State<Home>
                                 description: dish.description,
                                 basePrice: dish.price,
                                 imageType: dish.imageType,
-                                backgroundColor: bgColor,
+                                backgroundColor: Color(dish.colorValue),
+                                imagePath: dish.imagePath,
                               ),
                             ),
                           );
@@ -606,19 +590,6 @@ class _HomeState extends State<Home>
         ),
       ),
     );
-  }
-
-  Color _getCategoryColor(String category) {
-    switch (category) {
-      case 'Popular':
-        return Colors.orange;
-      case 'Appetizers':
-        return Colors.green;
-      case 'Main Courses':
-        return Colors.blue;
-      default:
-        return Colors.grey;
-    }
   }
 
   String _getInitials(String name) {

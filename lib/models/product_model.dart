@@ -8,8 +8,11 @@ class Product {
   final String category; // 'Popular', 'Appetizers', 'Main Courses', 'Desserts'
   final int colorValue; // Color for product card background
   final int vendorId; // ID of the vendor who created this product
+  final String vendorName; // Name of the vendor/store
+  final String? vendorImage; // Vendor profile image path
   final int stockQuantity; // Available stock
   final String? imagePath; // Path to product image
+  final bool hasCustomization; // Whether product has size/add-ons
   final DateTime createdAt;
   final bool isActive; // Admin can approve/deactivate products
 
@@ -21,8 +24,11 @@ class Product {
     required this.category,
     required this.colorValue,
     required this.vendorId,
+    required this.vendorName,
+    this.vendorImage,
     this.stockQuantity = 0,
     this.imagePath,
+    this.hasCustomization = false,
     DateTime? createdAt,
     this.isActive = true,
   }) : createdAt = createdAt ?? DateTime.now();
@@ -37,8 +43,11 @@ class Product {
       'category': category,
       'colorValue': colorValue,
       'vendorId': vendorId,
+      'vendorName': vendorName,
+      'vendorImage': vendorImage,
       'stockQuantity': stockQuantity,
       'imagePath': imagePath,
+      'hasCustomization': hasCustomization ? 1 : 0,
       'createdAt': createdAt.toIso8601String(),
       'isActive': isActive ? 1 : 0,
     };
@@ -54,8 +63,11 @@ class Product {
       category: map['category'] as String,
       colorValue: map['colorValue'] as int,
       vendorId: map['vendorId'] as int,
+      vendorName: map['vendorName'] as String? ?? 'Unknown Store',
+      vendorImage: map['vendorImage'] as String?,
       stockQuantity: map['stockQuantity'] as int? ?? 0,
       imagePath: map['imagePath'] as String?,
+      hasCustomization: (map['hasCustomization'] as int?) == 1,
       createdAt: DateTime.parse(map['createdAt'] as String),
       isActive: (map['isActive'] as int) == 1,
     );
@@ -70,8 +82,11 @@ class Product {
     String? category,
     int? colorValue,
     int? vendorId,
+    String? vendorName,
+    String? vendorImage,
     int? stockQuantity,
     String? imagePath,
+    bool? hasCustomization,
     DateTime? createdAt,
     bool? isActive,
   }) {
@@ -83,8 +98,11 @@ class Product {
       category: category ?? this.category,
       colorValue: colorValue ?? this.colorValue,
       vendorId: vendorId ?? this.vendorId,
+      vendorName: vendorName ?? this.vendorName,
+      vendorImage: vendorImage ?? this.vendorImage,
       stockQuantity: stockQuantity ?? this.stockQuantity,
       imagePath: imagePath ?? this.imagePath,
+      hasCustomization: hasCustomization ?? this.hasCustomization,
       createdAt: createdAt ?? this.createdAt,
       isActive: isActive ?? this.isActive,
     );
@@ -101,6 +119,9 @@ class Product {
       imageType: 'food', // Default image type
       colorValue: colorValue,
       imagePath: imagePath, // Include the image path
+      vendorName: vendorName, // Include vendor name
+      vendorImage: vendorImage, // Include vendor profile image
+      hasCustomization: hasCustomization, // Include customization flag
     );
   }
 }

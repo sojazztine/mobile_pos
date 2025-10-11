@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/auth_model.dart';
-import '../common/home.dart';
+import '../common/main_navigation.dart';
 import '../../utils/image_picker_helper.dart';
 import '../../services/image_storage_service.dart';
 import '../../widgets/common/image_picker_widget.dart';
@@ -215,7 +215,7 @@ class _RiderProfileState extends State<RiderProfile> {
                     if (context.mounted) {
                       Navigator.pushAndRemoveUntil(
                         context,
-                        MaterialPageRoute(builder: (context) => const Home()),
+                        MaterialPageRoute(builder: (context) => const MainNavigation()),
                         (route) => false,
                       );
                     }

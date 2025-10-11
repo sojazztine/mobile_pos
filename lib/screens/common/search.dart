@@ -322,7 +322,8 @@ class _SearchScreenState extends State<SearchScreen> {
               description: dish.description,
               basePrice: dish.price,
               imageType: dish.imageType,
-              backgroundColor: bgColor,
+              backgroundColor: Color(dish.colorValue),
+              imagePath: dish.imagePath,
             ),
           ),
         );
@@ -378,7 +379,8 @@ class _SearchScreenState extends State<SearchScreen> {
                             description: dish.description,
                             basePrice: dish.price,
                             imageType: dish.imageType,
-                            backgroundColor: bgColor,
+                            backgroundColor: Color(dish.colorValue),
+                            imagePath: dish.imagePath,
                           ),
                         ),
                       );

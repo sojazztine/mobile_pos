@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/auth_model.dart';
-import '../common/home.dart';
+import '../common/main_navigation.dart';
 import 'vendor_menu_management.dart';
 import 'vendor_orders.dart';
 import 'vendor_reports.dart';
@@ -204,7 +204,7 @@ class _VendorProfileState extends State<VendorProfile> {
                     if (context.mounted) {
                       Navigator.pushAndRemoveUntil(
                         context,
-                        MaterialPageRoute(builder: (context) => const Home()),
+                        MaterialPageRoute(builder: (context) => const MainNavigation()),
                         (route) => false,
                       );
                     }
