@@ -7,7 +7,7 @@ import 'screens/common/splash_screen.dart';
 import 'screens/common/main_navigation.dart';
 import 'screens/admin/admin_dashboard.dart';
 import 'screens/vendor/vendor_dashboard.dart';
-import 'screens/rider/rider_dashboard.dart';
+import 'screens/rider/rider_navigation.dart';
 
 // Models
 import 'models/cart_model.dart';
@@ -78,7 +78,7 @@ class _AppInitializerState extends State<AppInitializer> {
           } else if (authModel.isVendor) {
             return const VendorDashboard();
           } else if (authModel.isRider) {
-            return const RiderDashboard();
+            return const RiderNavigation();
           }
         }
         // Default to main navigation for regular users or not logged in

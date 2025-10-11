@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:io';
-import 'cart.dart';
 import '../../models/cart_model.dart';
 import '../../models/auth_model.dart';
 import 'product_details.dart';
 import '../../models/dish_model.dart';
 import '../../services/database_service.dart';
-import 'orders.dart';
-import 'profile.dart';
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -188,10 +185,11 @@ class _HomeState extends State<Home>
                           IconButton(
                             icon: const Icon(Icons.shopping_bag_outlined),
                             onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const CartScreen(),
+                              // Don't navigate - user should use bottom nav bar
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Use the Cart tab in the bottom navigation'),
+                                  duration: Duration(seconds: 1),
                                 ),
                               );
                             },
@@ -647,10 +645,11 @@ class _HomeState extends State<Home>
                       GestureDetector(
                         onTap: () {
                           Navigator.pop(context);
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const ProfileScreen(),
+                          // Use bottom nav bar instead
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Use the Profile tab in the bottom navigation'),
+                              duration: Duration(seconds: 1),
                             ),
                           );
                         },
@@ -691,10 +690,11 @@ class _HomeState extends State<Home>
                         label: 'My Cart',
                         onTap: () {
                           Navigator.pop(context);
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const CartScreen(),
+                          // Use bottom nav bar instead
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Use the Cart tab in the bottom navigation'),
+                              duration: Duration(seconds: 1),
                             ),
                           );
                         },
@@ -704,10 +704,11 @@ class _HomeState extends State<Home>
                         label: 'Orders',
                         onTap: () {
                           Navigator.pop(context);
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const OrdersScreen(),
+                          // Use bottom nav bar instead
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Use the Orders tab in the bottom navigation'),
+                              duration: Duration(seconds: 1),
                             ),
                           );
                         },
@@ -725,10 +726,11 @@ class _HomeState extends State<Home>
                         label: 'Profile',
                         onTap: () {
                           Navigator.pop(context);
-                           Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const ProfileScreen(),
+                          // Use bottom nav bar instead
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Use the Profile tab in the bottom navigation'),
+                              duration: Duration(seconds: 1),
                             ),
                           );
                         },

@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'rider_delivery_details.dart';
-import 'rider_earnings.dart';
-import 'rider_profile.dart';
-import 'rider_settings.dart';
 import '../../models/auth_model.dart';
 import '../../models/order_model.dart';
 import '../../services/database_service.dart';
-import '../common/home.dart';
+import '../common/main_navigation.dart';
 
 class RiderDeliveriesScreen extends StatefulWidget {
   const RiderDeliveriesScreen({super.key});
@@ -17,7 +14,6 @@ class RiderDeliveriesScreen extends StatefulWidget {
 }
 
 class _RiderDeliveriesScreenState extends State<RiderDeliveriesScreen> {
-  int _selectedIndex = 0;
   List<Order> myOrders = [];
   bool isLoading = true;
 
@@ -144,64 +140,11 @@ class _RiderDeliveriesScreenState extends State<RiderDeliveriesScreen> {
                               order: order,
                             ),
                           );
-                        }).toList(),
+                        }),
                       ],
                     ),
                   ),
                 ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: (index) {
-          if (_selectedIndex == index) return;
-
-          Widget destination;
-          switch (index) {
-            case 0:
-              destination = const RiderDeliveriesScreen();
-              break;
-            case 1:
-              destination = const RiderEarnings();
-              break;
-            case 2:
-              destination = const RiderProfile();
-              break;
-            case 3:
-              destination = const RiderSettings();
-              break;
-            default:
-              return;
-          }
-
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (context) => destination),
-            (route) => false,
-          );
-        },
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: Colors.pink,
-        unselectedItemColor: Colors.grey,
-        selectedFontSize: 12,
-        unselectedFontSize: 12,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.delivery_dining),
-            label: 'Deliveries',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.receipt_long),
-            label: 'Earnings',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profile',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.settings),
-            label: 'Settings',
-          ),
-        ],
-      ),
     );
   }
 
@@ -372,10 +315,32 @@ class _RiderDeliveriesScreenState extends State<RiderDeliveriesScreen> {
                 children: [
                   _buildDrawerItem(
                     context,
+                    icon: Icons.dashboard,
+                    title: 'Dashboard',
+                    onTap: () {
+                      Navigator.pop(context);
+                      // Use bottom nav bar instead
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Use the Dashboard tab in the bottom navigation'),
+                          duration: Duration(seconds: 1),
+                        ),
+                      );
+                    },
+                  ),
+                  _buildDrawerItem(
+                    context,
                     icon: Icons.delivery_dining,
                     title: 'Deliveries',
                     onTap: () {
                       Navigator.pop(context);
+                      // Use bottom nav bar instead
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Use the Deliveries tab in the bottom navigation'),
+                          duration: Duration(seconds: 1),
+                        ),
+                      );
                     },
                   ),
                   _buildDrawerItem(
@@ -384,9 +349,12 @@ class _RiderDeliveriesScreenState extends State<RiderDeliveriesScreen> {
                     title: 'Earnings',
                     onTap: () {
                       Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const RiderEarnings()),
+                      // Use bottom nav bar instead
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Use the Earnings tab in the bottom navigation'),
+                          duration: Duration(seconds: 1),
+                        ),
                       );
                     },
                   ),
@@ -396,9 +364,12 @@ class _RiderDeliveriesScreenState extends State<RiderDeliveriesScreen> {
                     title: 'Profile',
                     onTap: () {
                       Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const RiderProfile()),
+                      // Use bottom nav bar instead
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Use the Profile tab in the bottom navigation'),
+                          duration: Duration(seconds: 1),
+                        ),
                       );
                     },
                   ),
@@ -408,9 +379,12 @@ class _RiderDeliveriesScreenState extends State<RiderDeliveriesScreen> {
                     title: 'Settings',
                     onTap: () {
                       Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const RiderSettings()),
+                      // Use bottom nav bar instead
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Use the Profile tab in the bottom navigation for settings'),
+                          duration: Duration(seconds: 1),
+                        ),
                       );
                     },
                   ),
@@ -434,7 +408,7 @@ class _RiderDeliveriesScreenState extends State<RiderDeliveriesScreen> {
                   if (context.mounted) {
                     Navigator.pushAndRemoveUntil(
                       context,
-                      MaterialPageRoute(builder: (context) => const Home()),
+                      MaterialPageRoute(builder: (context) => const MainNavigation()),
                       (route) => false,
                     );
                   }

@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import '../../models/auth_model.dart';
 import '../../models/order_model.dart';
 import '../../services/database_service.dart';
-import '../common/home.dart';
+import '../common/main_navigation.dart';
 import 'rider_deliveries.dart';
 
 class RiderDashboard extends StatefulWidget {
@@ -363,9 +363,12 @@ class _RiderDashboardState extends State<RiderDashboard> {
                 title: 'My Deliveries',
                 subtitle: 'Track your active deliveries',
                 onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const RiderDeliveriesScreen()),
+                  // Use bottom nav bar instead
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Use the Deliveries tab in the bottom navigation'),
+                      duration: Duration(seconds: 1),
+                    ),
                   );
                 },
               ),
@@ -388,7 +391,13 @@ class _RiderDashboardState extends State<RiderDashboard> {
                 title: 'Earnings',
                 subtitle: 'View your earnings and payouts',
                 onTap: () {
-                  // Navigate to earnings
+                  // Use bottom nav bar instead
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Use the Earnings tab in the bottom navigation'),
+                      duration: Duration(seconds: 1),
+                    ),
+                  );
                 },
               ),
 
@@ -403,7 +412,7 @@ class _RiderDashboardState extends State<RiderDashboard> {
                     if (context.mounted) {
                       Navigator.pushAndRemoveUntil(
                         context,
-                        MaterialPageRoute(builder: (context) => const Home()),
+                        MaterialPageRoute(builder: (context) => const MainNavigation()),
                         (route) => false,
                       );
                     }

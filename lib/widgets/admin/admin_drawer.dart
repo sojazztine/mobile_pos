@@ -8,7 +8,7 @@ import '../../screens/admin/admin_products.dart';
 import '../../screens/admin/admin_vendor_users.dart';
 import '../../screens/admin/admin_riders.dart';
 import '../../screens/admin/admin_settings.dart';
-import '../../screens/common/home.dart';
+import '../../screens/common/main_navigation.dart';
 
 class AdminDrawer extends StatelessWidget {
   final String currentPage;
@@ -253,10 +253,10 @@ class AdminDrawer extends StatelessWidget {
                       if (shouldLogout == true) {
                         await authModel.logout();
 
-                        // Navigate to home and clear all routes
+                        // Navigate to main navigation and clear all routes
                         navigator.pushAndRemoveUntil(
                           MaterialPageRoute(
-                            builder: (context) => const Home(),
+                            builder: (context) => const MainNavigation(),
                           ),
                           (route) => false,
                         );

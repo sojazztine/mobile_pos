@@ -18,12 +18,6 @@ class RiderProfile extends StatefulWidget {
 class _RiderProfileState extends State<RiderProfile> {
   File? _selectedImageFile;
 
-  String _getInitials(String fullName) {
-    final names = fullName.trim().split(' ');
-    if (names.isEmpty) return 'R';
-    if (names.length == 1) return names[0][0].toUpperCase();
-    return '${names[0][0]}${names[names.length - 1][0]}'.toUpperCase();
-  }
 
   Future<void> _pickProfileImage() async {
     final imageFile = await ImagePickerHelper.pickImageWithOptions(context);
@@ -65,7 +59,6 @@ class _RiderProfileState extends State<RiderProfile> {
     final authModel = Provider.of<AuthModel>(context);
     final user = authModel.currentUser;
     final userName = user?.fullName ?? 'Rider';
-    final userInitials = _getInitials(userName);
     final riderId = user?.id?.toString() ?? '123456';
 
     return Scaffold(
@@ -73,10 +66,7 @@ class _RiderProfileState extends State<RiderProfile> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
-        ),
+        automaticallyImplyLeading: false,
         title: const Text(
           'Profile',
           style: TextStyle(
@@ -242,7 +232,6 @@ class _RiderProfileState extends State<RiderProfile> {
           ),
         ),
       ),
-      bottomNavigationBar: _buildBottomNav(context),
     );
   }
 
@@ -315,51 +304,4 @@ class _RiderProfileState extends State<RiderProfile> {
     );
   }
 
-  Widget _buildBottomNav(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      child: BottomNavigationBar(
-        currentIndex: 2, // Profile tab
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: Colors.pink,
-        unselectedItemColor: Colors.grey,
-        selectedFontSize: 12,
-        unselectedFontSize: 12,
-        backgroundColor: Colors.white,
-        elevation: 0,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.delivery_dining),
-            label: 'Deliveries',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.receipt_long),
-            label: 'Earnings',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profile',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.settings),
-            label: 'Settings',
-          ),
-        ],
-        onTap: (index) {
-          if (index == 0) {
-            Navigator.pop(context); // Go back to deliveries
-          }
-        },
-      ),
-    );
-  }
 }
