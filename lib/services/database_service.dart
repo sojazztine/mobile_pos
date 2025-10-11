@@ -593,12 +593,17 @@ class DatabaseService {
     final db = await database;
 
     try {
+      // Debug: Print order data being inserted
+      print('DEBUG: Creating order with status: ${order.status}');
+      print('DEBUG: Order data: ${order.toMap()}');
+      
       final id = await db.insert(
         'orders',
         order.toMap(),
         conflictAlgorithm: ConflictAlgorithm.abort,
       );
 
+      print('DEBUG: Order inserted with ID: $id');
       return order.copyWith(id: id);
     } catch (e) {
       print('Error creating order: $e');
@@ -667,6 +672,12 @@ class DatabaseService {
       whereArgs: ['pending', 'ready'],
       orderBy: 'createdAt DESC',
     );
+
+    // Debug: Print raw database results
+    print('DEBUG: Raw database query returned ${maps.length} orders');
+    for (var map in maps) {
+      print('DEBUG: Raw order - ID: ${map['id']}, Status: ${map['status']}, Customer: ${map['customerName']}');
+    }
 
     return maps.map((map) => Order.fromMap(map)).toList();
   }

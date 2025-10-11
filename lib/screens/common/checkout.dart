@@ -109,7 +109,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           Navigator.pop(context); // Close loading
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Product "${productName}" not found in database'),
+              content: Text('Product "$productName" not found in database'),
               backgroundColor: Colors.red,
             ),
           );
@@ -188,6 +188,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       );
 
       final createdOrder = await db.createOrder(order);
+
+      // Debug: Print order creation result
+      print('DEBUG: Order creation result: ${createdOrder != null ? "SUCCESS" : "FAILED"}');
+      if (createdOrder != null) {
+        print('DEBUG: Created order ID: ${createdOrder.id}, Status: ${createdOrder.status}');
+      }
 
       if (createdOrder != null) {
         // Update orders model
@@ -350,7 +356,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     ],
                   ),
                 );
-              }).toList(),
+              }),
 
               const SizedBox(height: 8),
               const Divider(),

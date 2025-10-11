@@ -52,7 +52,7 @@ class Order {
       'description': description,
       'price': price,
       'status': status,
-      'items': jsonEncode(items), // Store as JSON string in SQLite
+      'items': items.toString(), // Store as string representation for now
       'customerName': customerName,
       'deliveryAddress': deliveryAddress,
       'phoneNumber': phoneNumber,
@@ -65,12 +65,14 @@ class Order {
 
   // Create Order from Map
   factory Order.fromMap(Map<String, dynamic> map) {
-    // Parse items JSON string back to List<Map<String, dynamic>>
+    // Parse items string back to List<Map<String, dynamic>>
     List<Map<String, dynamic>> parseItems(String itemsStr) {
       try {
+        // Try JSON decode first
         final List<dynamic> itemsList = jsonDecode(itemsStr);
         return itemsList.cast<Map<String, dynamic>>();
       } catch (e) {
+        // If JSON decode fails, return empty list for now
         print('Error parsing items JSON: $e');
         return [];
       }

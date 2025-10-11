@@ -26,6 +26,19 @@ class _RiderDashboardState extends State<RiderDashboard> {
   Future<void> _loadAvailableOrders() async {
     final db = DatabaseService.instance;
     final orders = await db.getPendingOrders();
+    
+    // Debug: Also check all orders to see what's in the database
+    final allOrders = await db.getAllOrders();
+    print('DEBUG: Total orders in database: ${allOrders.length}');
+    for (var order in allOrders) {
+      print('DEBUG: All orders - ID: ${order.id}, Status: ${order.status}, Customer: ${order.customerName}');
+    }
+
+    // Debug: Print order count and details
+    print('DEBUG: Found ${orders.length} pending orders');
+    for (var order in orders) {
+      print('DEBUG: Order ${order.id} - Status: ${order.status} - Customer: ${order.customerName}');
+    }
 
     setState(() {
       availableOrders = orders;
@@ -87,6 +100,15 @@ class _RiderDashboardState extends State<RiderDashboard> {
           ),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh, color: Colors.black),
+            onPressed: () {
+              setState(() {
+                isLoading = true;
+              });
+              _loadAvailableOrders();
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.notifications_outlined, color: Colors.black),
             onPressed: () {},
@@ -301,16 +323,19 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                           color: Colors.pink,
                                         ),
                                       ),
-                                      ElevatedButton(
-                                        onPressed: () => _acceptOrder(order),
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: Colors.pink,
-                                          foregroundColor: Colors.white,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(8),
+                                      SizedBox(
+                                        width: 100,
+                                        child: ElevatedButton(
+                                          onPressed: () => _acceptOrder(order),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Colors.pink,
+                                            foregroundColor: Colors.white,
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(8),
+                                            ),
                                           ),
+                                          child: const Text('Accept'),
                                         ),
-                                        child: const Text('Accept'),
                                       ),
                                     ],
                                   ),
