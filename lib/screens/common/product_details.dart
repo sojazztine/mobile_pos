@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/cart_model.dart';
-import '../../models/dish_model.dart';
 
 class ProductDetailsScreen extends StatefulWidget {
   final String productName;
@@ -11,6 +10,7 @@ class ProductDetailsScreen extends StatefulWidget {
   final String imageType;
   final Color backgroundColor;
   final String? imagePath;
+  final bool hasCustomization;
 
   const ProductDetailsScreen({
     super.key,
@@ -20,6 +20,7 @@ class ProductDetailsScreen extends StatefulWidget {
     required this.imageType,
     required this.backgroundColor,
     this.imagePath,
+    this.hasCustomization = false,
   });
 
   @override
@@ -56,22 +57,31 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
   void _addToCart() {
     final cart = Provider.of<CartModel>(context, listen: false);
 
-    // Create item name with customizations
+    // Create item name with customizations (only if product has customizations)
     String itemName = widget.productName;
-    if (selectedSize != 'Single') {
-      itemName += ' ($selectedSize)';
-    }
-    if (selectedAddons.isNotEmpty) {
-      itemName += ' + ${selectedAddons.join(', ')}';
+    if (widget.hasCustomization) {
+      if (selectedSize != 'Single') {
+        itemName += ' ($selectedSize)';
+      }
+      if (selectedAddons.isNotEmpty) {
+        itemName += ' + ${selectedAddons.join(', ')}';
+      }
     }
 
     // Generate unique ID based on customizations
-    String itemId = '${widget.productName}_${selectedSize}_${selectedAddons.join('_')}'
-        .toLowerCase()
-        .replaceAll(' ', '_');
+    String itemId;
+    if (widget.hasCustomization) {
+      itemId = '${widget.productName}_${selectedSize}_${selectedAddons.join('_')}'
+          .toLowerCase()
+          .replaceAll(' ', '_');
+    } else {
+      itemId = widget.productName.toLowerCase().replaceAll(' ', '_');
+    }
 
     // Add to cart with calculated price
-    double itemPrice = totalPrice / quantity;
+    double itemPrice = widget.hasCustomization ? (totalPrice / quantity) : widget.basePrice;
+    
+    // Add the item with the specified quantity
     for (int i = 0; i < quantity; i++) {
       cart.addItem(itemId, itemName, itemPrice, widget.imageType);
     }
@@ -175,8 +185,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                         const SizedBox(height: 24),
 
                         // Customize Section (only if hasCustomization is true)
-                        // Always show customization options
-                        ...[
+                        if (widget.hasCustomization) ...[
                           const Text(
                             'Size',
                             style: TextStyle(
@@ -194,20 +203,6 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                               const SizedBox(width: 12),
                               _buildSizeOption('Double'),
                               const SizedBox(width: 12),
-                              _buildSizeOption('Triple'),
-                            ],
-                          ),
-
-                          const SizedBox(height: 24),
-
-                          // Add-ons Section
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: [
-                              _buildSizeOption('Single'),
-                              const SizedBox(width: 10),
-                              _buildSizeOption('Double'),
-                              const SizedBox(width: 10),
                               _buildSizeOption('Triple'),
                             ],
                           ),

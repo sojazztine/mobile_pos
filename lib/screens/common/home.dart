@@ -459,16 +459,17 @@ class _HomeState extends State<Home>
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (context) => ProductDetailsScreen(
-              productName: dish.name,
-              description: dish.description,
-              basePrice: dish.price,
-              imageType: dish.imageType,
-              backgroundColor: Color(dish.colorValue),
-              imagePath: dish.imagePath,
+            MaterialPageRoute(
+              builder: (context) => ProductDetailsScreen(
+                productName: dish.name,
+                description: dish.description,
+                basePrice: dish.price,
+                imageType: dish.imageType,
+                backgroundColor: Color(dish.colorValue),
+                imagePath: dish.imagePath,
+                hasCustomization: dish.hasCustomization,
+              ),
             ),
-          ),
         );
       },
       child: Container(
@@ -542,6 +543,7 @@ class _HomeState extends State<Home>
                                 imageType: dish.imageType,
                                 backgroundColor: Color(dish.colorValue),
                                 imagePath: dish.imagePath,
+                                hasCustomization: dish.hasCustomization,
                               ),
                             ),
                           );

@@ -21,7 +21,7 @@ class CartItem {
       'name': name,
       'price': price,
       'quantity': quantity,
-      'image': imageType,
+      'imageType': imageType,
     };
   }
 }

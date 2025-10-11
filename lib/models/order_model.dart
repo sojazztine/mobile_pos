@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'dart:convert';
 
 class Order {
   final int? id;
@@ -51,7 +52,7 @@ class Order {
       'description': description,
       'price': price,
       'status': status,
-      'items': items.toString(), // Store as string in SQLite
+      'items': jsonEncode(items), // Store as JSON string in SQLite
       'customerName': customerName,
       'deliveryAddress': deliveryAddress,
       'phoneNumber': phoneNumber,
@@ -64,38 +65,13 @@ class Order {
 
   // Create Order from Map
   factory Order.fromMap(Map<String, dynamic> map) {
-    // Parse items string back to List<Map<String, dynamic>>
+    // Parse items JSON string back to List<Map<String, dynamic>>
     List<Map<String, dynamic>> parseItems(String itemsStr) {
       try {
-        // Remove brackets and split by },{
-        final itemsList = itemsStr
-            .substring(1, itemsStr.length - 1)
-            .split('}, {')
-            .map((item) {
-          final cleanItem = item.replaceAll('{', '').replaceAll('}', '');
-          final pairs = cleanItem.split(', ');
-          final itemMap = <String, dynamic>{};
-
-          for (var pair in pairs) {
-            final keyValue = pair.split(': ');
-            if (keyValue.length == 2) {
-              final key = keyValue[0].trim();
-              final value = keyValue[1].trim();
-
-              if (key == 'productId' || key == 'quantity') {
-                itemMap[key] = int.tryParse(value) ?? 0;
-              } else if (key == 'price') {
-                itemMap[key] = double.tryParse(value) ?? 0.0;
-              } else {
-                itemMap[key] = value;
-              }
-            }
-          }
-          return itemMap;
-        }).toList();
-
-        return itemsList;
+        final List<dynamic> itemsList = jsonDecode(itemsStr);
+        return itemsList.cast<Map<String, dynamic>>();
       } catch (e) {
+        print('Error parsing items JSON: $e');
         return [];
       }
     }
@@ -199,10 +175,4 @@ class OrdersModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  String _formatDate(DateTime date) {
-    final days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-    return '${days[date.weekday % 7]} ${months[date.month - 1]} ${date.day}';
-  }
 }

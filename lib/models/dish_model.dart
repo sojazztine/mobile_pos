@@ -37,6 +37,7 @@ class DishData {
       category: 'Popular',
       imageType: 'pizza',
       colorValue: 0xFFE0E0E0,
+      hasCustomization: true,
     ),
     Dish(
       id: 'classic_cheeseburger',
@@ -46,6 +47,7 @@ class DishData {
       category: 'Popular',
       imageType: 'burger',
       colorValue: 0xFFFFCC80,
+      hasCustomization: true,
     ),
 
     // Appetizers
@@ -57,6 +59,7 @@ class DishData {
       category: 'Appetizers',
       imageType: 'salad',
       colorValue: 0xFFE0E0E0,
+      hasCustomization: false,
     ),
     Dish(
       id: 'garlic_bread',
@@ -66,6 +69,7 @@ class DishData {
       category: 'Appetizers',
       imageType: 'bread',
       colorValue: 0xFFFFE082,
+      hasCustomization: false,
     ),
     Dish(
       id: 'mozzarella_sticks',

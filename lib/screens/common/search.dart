@@ -316,16 +316,17 @@ class _SearchScreenState extends State<SearchScreen> {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (context) => ProductDetailsScreen(
-              productName: dish.name,
-              description: dish.description,
-              basePrice: dish.price,
-              imageType: dish.imageType,
-              backgroundColor: Color(dish.colorValue),
-              imagePath: dish.imagePath,
+            MaterialPageRoute(
+              builder: (context) => ProductDetailsScreen(
+                productName: dish.name,
+                description: dish.description,
+                basePrice: dish.price,
+                imageType: dish.imageType,
+                backgroundColor: Color(dish.colorValue),
+                imagePath: dish.imagePath,
+                hasCustomization: dish.hasCustomization,
+              ),
             ),
-          ),
         );
       },
       child: Column(
@@ -373,16 +374,17 @@ class _SearchScreenState extends State<SearchScreen> {
                     onPressed: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(
-                          builder: (context) => ProductDetailsScreen(
-                            productName: dish.name,
-                            description: dish.description,
-                            basePrice: dish.price,
-                            imageType: dish.imageType,
-                            backgroundColor: Color(dish.colorValue),
-                            imagePath: dish.imagePath,
-                          ),
-                        ),
+            MaterialPageRoute(
+              builder: (context) => ProductDetailsScreen(
+                productName: dish.name,
+                description: dish.description,
+                basePrice: dish.price,
+                imageType: dish.imageType,
+                backgroundColor: Color(dish.colorValue),
+                imagePath: dish.imagePath,
+                hasCustomization: dish.hasCustomization,
+              ),
+            ),
                       );
                     },
                   ),
