@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/auth_model.dart';
-import '../common/home.dart';
-import 'vendor_add_product.dart';
+import '../../services/database_service.dart';
 import 'vendor_menu_management.dart';
 import 'vendor_orders.dart';
 import 'vendor_reports.dart';
 import 'vendor_profile.dart';
+import 'vendor_notifications.dart';
 
 class VendorDashboard extends StatefulWidget {
   const VendorDashboard({super.key});
@@ -18,12 +18,57 @@ class VendorDashboard extends StatefulWidget {
 class _VendorDashboardState extends State<VendorDashboard> {
   int _selectedIndex = 0;
   String _selectedPeriod = 'Today';
+  List<dynamic> _orders = [];
+  List<dynamic> _products = [];
+  bool _isLoading = true;
+  int _newOrdersCount = 0;
+  int _lowStockCount = 0;
+  double _todayRevenue = 0.0;
 
-  String _getInitials(String fullName) {
-    final names = fullName.trim().split(' ');
-    if (names.isEmpty) return 'V';
-    if (names.length == 1) return names[0][0].toUpperCase();
-    return '${names[0][0]}${names[names.length - 1][0]}'.toUpperCase();
+  @override
+  void initState() {
+    super.initState();
+    _loadDashboardData();
+  }
+
+  Future<void> _loadDashboardData() async {
+    final authModel = Provider.of<AuthModel>(context, listen: false);
+    final vendorId = authModel.currentUser?.id;
+
+    if (vendorId == null) {
+      setState(() {
+        _isLoading = false;
+      });
+      return;
+    }
+
+    final db = DatabaseService.instance;
+
+    // Load orders and products
+    final orders = await db.getOrdersByVendor(vendorId);
+    final products = await db.getProductsByVendor(vendorId);
+
+    // Calculate statistics
+    final today = DateTime.now();
+    final todayOrders = orders.where((order) {
+      final orderDate = DateTime.parse(order.createdAt.toString());
+      return orderDate.year == today.year &&
+          orderDate.month == today.month &&
+          orderDate.day == today.day;
+    }).toList();
+
+    final newOrders = orders.where((o) => o.status == 'pending').length;
+    final lowStock = products.where((p) => p.stockQuantity < 10).length;
+    final revenue = todayOrders.fold<double>(0.0, (sum, order) => sum + order.price);
+
+    setState(() {
+      _orders = orders;
+      _products = products;
+      _newOrdersCount = newOrders;
+      _lowStockCount = lowStock;
+      _todayRevenue = revenue;
+      _isLoading = false;
+    });
   }
 
   @override
@@ -31,51 +76,73 @@ class _VendorDashboardState extends State<VendorDashboard> {
     final authModel = Provider.of<AuthModel>(context);
     final user = authModel.currentUser;
     final vendorName = user?.fullName ?? 'The Burger House';
-    final userInitials = _getInitials(vendorName);
 
     return Scaffold(
       backgroundColor: Colors.grey[50],
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: Builder(
-          builder: (context) => IconButton(
-            icon: const Icon(Icons.menu, color: Colors.black),
-            onPressed: () {
-              Scaffold.of(context).openDrawer();
-            },
-          ),
-        ),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Welcome back,',
-              style: TextStyle(
-                color: Colors.black54,
-                fontSize: 12,
-                fontWeight: FontWeight.normal,
+      appBar: _selectedIndex == 0
+          ? AppBar(
+              backgroundColor: Colors.white,
+              elevation: 0,
+              automaticallyImplyLeading: false,
+              title: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Welcome back,',
+                    style: TextStyle(
+                      color: Colors.black54,
+                      fontSize: 12,
+                      fontWeight: FontWeight.normal,
+                    ),
+                  ),
+                  Text(
+                    vendorName,
+                    style: const TextStyle(
+                      color: Colors.black,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
               ),
-            ),
-            Text(
-              vendorName,
-              style: const TextStyle(
-                color: Colors.black,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined, color: Colors.black),
-            onPressed: () {},
-          ),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.notifications_outlined, color: Colors.black),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const VendorNotifications(),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            )
+          : null,
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: [
+          _buildDashboardContent(vendorName),
+          const VendorMenuManagement(),
+          const VendorOrders(),
+          const VendorReports(),
+          const VendorProfile(),
         ],
       ),
-      drawer: _buildDrawer(context, authModel, vendorName, userInitials),
-      body: SingleChildScrollView(
+      bottomNavigationBar: _buildBottomNav(),
+    );
+  }
+
+  Widget _buildDashboardContent(String vendorName) {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    final preparingCount = _orders.where((o) => o.status == 'accepted' || o.status == 'preparing').length;
+    final readyCount = _orders.where((o) => o.status == 'ready').length;
+
+    return SingleChildScrollView(
         padding: const EdgeInsets.all(20.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -88,7 +155,7 @@ class _VendorDashboardState extends State<VendorDashboard> {
                     icon: Icons.shopping_bag_outlined,
                     iconColor: Colors.orange[700]!,
                     iconBgColor: Colors.orange[50]!,
-                    value: '5',
+                    value: '$_newOrdersCount',
                     label: 'New Orders',
                   ),
                 ),
@@ -98,7 +165,7 @@ class _VendorDashboardState extends State<VendorDashboard> {
                     icon: Icons.inventory_outlined,
                     iconColor: Colors.red[700]!,
                     iconBgColor: Colors.red[50]!,
-                    value: '2',
+                    value: '$_lowStockCount',
                     label: 'Low Stock',
                   ),
                 ),
@@ -108,7 +175,7 @@ class _VendorDashboardState extends State<VendorDashboard> {
                     icon: Icons.attach_money,
                     iconColor: Colors.green[700]!,
                     iconBgColor: Colors.green[50]!,
-                    value: '\$1.2K',
+                    value: '\$${_todayRevenue.toStringAsFixed(0)}',
                     label: 'Revenue',
                   ),
                 ),
@@ -140,9 +207,9 @@ class _VendorDashboardState extends State<VendorDashboard> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      _buildOrderStatusItem('5', 'New'),
-                      _buildOrderStatusItem('8', 'Preparing'),
-                      _buildOrderStatusItem('3', 'Ready'),
+                      _buildOrderStatusItem('$_newOrdersCount', 'New'),
+                      _buildOrderStatusItem('$preparingCount', 'Preparing'),
+                      _buildOrderStatusItem('$readyCount', 'Ready'),
                     ],
                   ),
                   const SizedBox(height: 16),
@@ -151,7 +218,9 @@ class _VendorDashboardState extends State<VendorDashboard> {
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: () {
-                        // Navigate to all orders
+                        setState(() {
+                          _selectedIndex = 2; // Navigate to orders tab
+                        });
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.white.withOpacity(0.2),
@@ -248,44 +317,29 @@ class _VendorDashboardState extends State<VendorDashboard> {
             ),
           ],
         ),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
+      );
+  }
+
+  Widget _buildBottomNav() {
+    return BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: (index) {
-          if (_selectedIndex == index) return;
+          setState(() {
+            _selectedIndex = index;
+          });
 
-          Widget destination;
-          switch (index) {
-            case 0:
-              destination = const VendorDashboard();
-              break;
-            case 1:
-              destination = const VendorMenuManagement();
-              break;
-            case 2:
-              destination = const VendorOrders();
-              break;
-            case 3:
-              destination = const VendorReports();
-              break;
-            case 4:
-              destination = const VendorProfile();
-              break;
-            default:
-              return;
+          // Reload dashboard data when returning to dashboard
+          if (index == 0) {
+            _loadDashboardData();
           }
-
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (context) => destination),
-            (route) => false,
-          );
         },
         type: BottomNavigationBarType.fixed,
         selectedItemColor: Colors.pink,
         unselectedItemColor: Colors.grey,
         selectedFontSize: 12,
         unselectedFontSize: 12,
+        backgroundColor: Colors.white,
+        elevation: 8,
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.dashboard),
@@ -308,8 +362,7 @@ class _VendorDashboardState extends State<VendorDashboard> {
             label: 'Profile',
           ),
         ],
-      ),
-    );
+      );
   }
 
   Widget _buildTopStatCard({
@@ -399,204 +452,6 @@ class _VendorDashboardState extends State<VendorDashboard> {
             fontWeight: FontWeight.w600,
             color: isSelected ? Colors.white : Colors.black54,
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDrawer(BuildContext context, AuthModel authModel, String vendorName, String userInitials) {
-    return Drawer(
-      backgroundColor: const Color(0xFFF5F5F5),
-      child: SafeArea(
-        child: Column(
-          children: [
-            // Profile Section
-            Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
-                children: [
-                  CircleAvatar(
-                    radius: 35,
-                    backgroundColor: Colors.pink[100],
-                    child: Text(
-                      userInitials,
-                      style: TextStyle(
-                        color: Colors.pink[700],
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    vendorName,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const VendorProfile(),
-                        ),
-                      );
-                    },
-                    child: Text(
-                      authModel.currentUser?.email ?? 'View Profile',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Menu Items
-            Expanded(
-              child: ListView(
-                padding: EdgeInsets.zero,
-                children: [
-                  _buildDrawerItem(
-                    context,
-                    icon: Icons.dashboard,
-                    title: 'Dashboard',
-                    isSelected: true,
-                    onTap: () {
-                      Navigator.pop(context);
-                    },
-                  ),
-                  _buildDrawerItem(
-                    context,
-                    icon: Icons.restaurant_menu,
-                    title: 'Menu',
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const VendorMenuManagement(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildDrawerItem(
-                    context,
-                    icon: Icons.shopping_cart_outlined,
-                    title: 'Orders',
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const VendorOrders(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildDrawerItem(
-                    context,
-                    icon: Icons.bar_chart,
-                    title: 'Reports',
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const VendorReports(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildDrawerItem(
-                    context,
-                    icon: Icons.person_outline,
-                    title: 'Profile',
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const VendorProfile(),
-                        ),
-                      );
-                    },
-                  ),
-                
-                ],
-              ),
-            ),
-
-            // Logout
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: InkWell(
-                onTap: () async {
-                  Navigator.pop(context);
-                  await authModel.logout();
-                  if (context.mounted) {
-                    Navigator.pushAndRemoveUntil(
-                      context,
-                      MaterialPageRoute(builder: (context) => const Home()),
-                      (route) => false,
-                    );
-                  }
-                },
-                child: Row(
-                  children: [
-                    const Icon(Icons.logout, color: Colors.black54, size: 22),
-                    const SizedBox(width: 16),
-                    Text(
-                      'Logout',
-                      style: TextStyle(
-                        fontSize: 15,
-                        color: Colors.grey[700],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDrawerItem(BuildContext context, {
-    required IconData icon,
-    required String title,
-    bool isSelected = false,
-    required VoidCallback onTap,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 2.0),
-      child: Container(
-        decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFFCE4EC) : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: ListTile(
-          leading: Icon(
-            icon,
-            color: isSelected ? Colors.pink : Colors.black54,
-            size: 22,
-          ),
-          title: Text(
-            title,
-            style: TextStyle(
-              fontSize: 15,
-              color: isSelected ? Colors.pink : Colors.grey[700],
-              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-            ),
-          ),
-          onTap: onTap,
         ),
       ),
     );

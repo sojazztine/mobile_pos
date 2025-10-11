@@ -100,6 +100,7 @@ class Product {
       category: category,
       imageType: 'food', // Default image type
       colorValue: colorValue,
+      imagePath: imagePath, // Include the image path
     );
   }
 }

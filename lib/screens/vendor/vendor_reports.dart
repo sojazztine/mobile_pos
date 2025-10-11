@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../models/auth_model.dart';
+import '../../services/database_service.dart';
 import 'vendor_menu_management.dart';
 import 'vendor_orders.dart';
 import 'vendor_profile.dart';
@@ -11,8 +14,75 @@ class VendorReports extends StatefulWidget {
 }
 
 class _VendorReportsState extends State<VendorReports> {
-  int _selectedIndex = 3; // Reports tab
   String _selectedPeriod = 'Daily';
+  bool _isLoading = true;
+  double _totalRevenue = 0.0;
+  double _avgOrderValue = 0.0;
+  List<dynamic> _recentTransactions = [];
+  List<dynamic> _allOrders = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadReportsData();
+  }
+
+  Future<void> _loadReportsData() async {
+    final authModel = Provider.of<AuthModel>(context, listen: false);
+    final vendorId = authModel.currentUser?.id;
+
+    if (vendorId == null) {
+      setState(() {
+        _isLoading = false;
+      });
+      return;
+    }
+
+    final db = DatabaseService.instance;
+    final orders = await db.getOrdersByVendor(vendorId);
+
+    // Filter based on selected period
+    final filteredOrders = _filterOrdersByPeriod(orders);
+
+    final revenue = filteredOrders.fold<double>(0.0, (sum, order) => sum + order.price);
+    final avgValue = filteredOrders.isNotEmpty ? revenue / filteredOrders.length : 0.0;
+    final recent = filteredOrders.take(3).toList();
+
+    setState(() {
+      _allOrders = orders;
+      _totalRevenue = revenue;
+      _avgOrderValue = avgValue;
+      _recentTransactions = recent;
+      _isLoading = false;
+    });
+  }
+
+  List<dynamic> _filterOrdersByPeriod(List<dynamic> orders) {
+    final now = DateTime.now();
+
+    switch (_selectedPeriod) {
+      case 'Daily':
+        return orders.where((order) {
+          final orderDate = DateTime.parse(order.createdAt.toString());
+          return orderDate.year == now.year &&
+              orderDate.month == now.month &&
+              orderDate.day == now.day;
+        }).toList();
+      case 'Weekly':
+        final weekAgo = now.subtract(const Duration(days: 7));
+        return orders.where((order) {
+          final orderDate = DateTime.parse(order.createdAt.toString());
+          return orderDate.isAfter(weekAgo);
+        }).toList();
+      case 'Monthly':
+        return orders.where((order) {
+          final orderDate = DateTime.parse(order.createdAt.toString());
+          return orderDate.year == now.year && orderDate.month == now.month;
+        }).toList();
+      default:
+        return orders;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -21,10 +91,7 @@ class _VendorReportsState extends State<VendorReports> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
-        ),
+        automaticallyImplyLeading: false,
         title: const Text(
           'Sales & Analytics',
           style: TextStyle(
@@ -34,8 +101,16 @@ class _VendorReportsState extends State<VendorReports> {
           ),
         ),
         centerTitle: false,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh, color: Colors.black),
+            onPressed: _loadReportsData,
+          ),
+        ],
       ),
-      body: SingleChildScrollView(
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -74,9 +149,9 @@ class _VendorReportsState extends State<VendorReports> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    '\$1,250',
-                    style: TextStyle(
+                  Text(
+                    '\$${_totalRevenue.toStringAsFixed(2)}',
+                    style: const TextStyle(
                       fontSize: 32,
                       fontWeight: FontWeight.bold,
                       color: Colors.black87,
@@ -86,24 +161,10 @@ class _VendorReportsState extends State<VendorReports> {
                   Row(
                     children: [
                       Text(
-                        'Today',
+                        _selectedPeriod,
                         style: TextStyle(
                           fontSize: 13,
                           color: Colors.grey[600],
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      const Icon(
-                        Icons.arrow_upward,
-                        size: 14,
-                        color: Colors.green,
-                      ),
-                      const Text(
-                        '10%',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.green,
-                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],
@@ -163,9 +224,9 @@ class _VendorReportsState extends State<VendorReports> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    '\$25',
-                    style: TextStyle(
+                  Text(
+                    '\$${_avgOrderValue.toStringAsFixed(2)}',
+                    style: const TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
                       color: Colors.black87,
@@ -175,24 +236,10 @@ class _VendorReportsState extends State<VendorReports> {
                   Row(
                     children: [
                       Text(
-                        'Today',
+                        _selectedPeriod,
                         style: TextStyle(
                           fontSize: 13,
                           color: Colors.grey[600],
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      const Icon(
-                        Icons.arrow_downward,
-                        size: 14,
-                        color: Colors.red,
-                      ),
-                      const Text(
-                        '5%',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.red,
-                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],
@@ -270,17 +317,37 @@ class _VendorReportsState extends State<VendorReports> {
             const SizedBox(height: 12),
 
             // Transaction List
-            _buildTransaction('Sarah', '#12345', '\$35.00'),
-            const Divider(height: 1),
-            _buildTransaction('David', '#12346', '\$20.00'),
-            const Divider(height: 1),
-            _buildTransaction('Emily', '#12347', '\$45.00'),
+            if (_recentTransactions.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 40),
+                child: Center(
+                  child: Text(
+                    'No transactions yet',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[500],
+                    ),
+                  ),
+                ),
+              )
+            else
+              ..._recentTransactions.map((order) {
+                return Column(
+                  children: [
+                    _buildTransaction(
+                      order.customerName,
+                      '#${order.id}',
+                      '\$${order.price.toStringAsFixed(2)}',
+                    ),
+                    if (order != _recentTransactions.last) const Divider(height: 1),
+                  ],
+                );
+              }).toList(),
 
             const SizedBox(height: 80),
           ],
         ),
       ),
-      bottomNavigationBar: _buildBottomNav(),
     );
   }
 
@@ -290,6 +357,7 @@ class _VendorReportsState extends State<VendorReports> {
       onTap: () {
         setState(() {
           _selectedPeriod = label;
+          _loadReportsData(); // Reload data when period changes
         });
       },
       child: Container(
@@ -353,60 +421,6 @@ class _VendorReportsState extends State<VendorReports> {
     );
   }
 
-  Widget _buildBottomNav() {
-    return BottomNavigationBar(
-      currentIndex: _selectedIndex,
-      onTap: (index) {
-        if (index != _selectedIndex) {
-          if (index == 0) {
-            Navigator.pop(context); // Go back to dashboard
-          } else if (index == 1) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => const VendorMenuManagement()),
-            );
-          } else if (index == 2) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => const VendorOrders()),
-            );
-          } else if (index == 4) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => const VendorProfile()),
-            );
-          }
-        }
-      },
-      type: BottomNavigationBarType.fixed,
-      selectedItemColor: Colors.pink,
-      unselectedItemColor: Colors.grey,
-      selectedFontSize: 12,
-      unselectedFontSize: 12,
-      items: const [
-        BottomNavigationBarItem(
-          icon: Icon(Icons.dashboard),
-          label: 'Dashboard',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.restaurant_menu),
-          label: 'Menu',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.shopping_cart),
-          label: 'Orders',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.bar_chart),
-          label: 'Reports',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.person),
-          label: 'Profile',
-        ),
-      ],
-    );
-  }
 }
 
 // Chart Painter for Revenue

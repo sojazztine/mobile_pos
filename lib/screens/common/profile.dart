@@ -54,30 +54,30 @@ class ProfileScreen extends StatelessWidget {
 
   void _navigateToAddress(BuildContext context) {
     // TODO: Navigate to address screen
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Navigate to Address')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Navigate to Address')));
   }
 
   void _navigateToNotifications(BuildContext context) {
     // TODO: Navigate to notifications settings
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Navigate to Notifications')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Navigate to Notifications')));
   }
 
   void _getHelp(BuildContext context) {
     // TODO: Navigate to help screen
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Navigate to Help Center')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Navigate to Help Center')));
   }
 
   void _giftCard(BuildContext context) {
     // TODO: Navigate to gift card screen
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Navigate to Gift Cards')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Navigate to Gift Cards')));
   }
 
   void _logout(BuildContext context) {
@@ -106,10 +106,7 @@ class ProfileScreen extends StatelessWidget {
                 ),
               );
             },
-            child: const Text(
-              'Log Out',
-              style: TextStyle(color: Colors.red),
-            ),
+            child: const Text('Log Out', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -190,11 +187,23 @@ class ProfileScreen extends StatelessWidget {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          minimumSize: Size.zero,
+                          minimumSize:
+                              Size.zero, // keeps it compact when needed
+                          elevation: 0,
                         ),
-                        child: const Text(
-                          'Login',
-                          style: TextStyle(color: Colors.white),
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 12,
+                          ), // 👈 Inner padding
+                          child: Text(
+                            'Login',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                         ),
                       ),
                   ],
@@ -205,10 +214,7 @@ class ProfileScreen extends StatelessWidget {
                 // Profile Title
                 const Text(
                   'Profile',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
                 ),
 
                 const SizedBox(height: 20),
@@ -239,10 +245,7 @@ class ProfileScreen extends StatelessWidget {
                 // Account Settings Section
                 const Text(
                   'Account Settings',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
 
                 const SizedBox(height: 16),
@@ -275,7 +278,8 @@ class ProfileScreen extends StatelessWidget {
                       const Divider(height: 1),
                       _buildMenuItem(
                         title: 'Notifications',
-                        subtitle: 'Manage delivery and promotional notifications',
+                        subtitle:
+                            'Manage delivery and promotional notifications',
                         onTap: () => _navigateToNotifications(context),
                         isLast: true,
                       ),
@@ -335,18 +339,11 @@ class ProfileScreen extends StatelessWidget {
         ),
         child: Column(
           children: [
-            Icon(
-              icon,
-              color: Colors.pink,
-              size: 28,
-            ),
+            Icon(icon, color: Colors.pink, size: 28),
             const SizedBox(height: 8),
             Text(
               label,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
             ),
           ],
         ),
@@ -363,7 +360,9 @@ class ProfileScreen extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.vertical(
-        top: title == 'Manage Account' ? const Radius.circular(12) : Radius.zero,
+        top: title == 'Manage Account'
+            ? const Radius.circular(12)
+            : Radius.zero,
         bottom: isLast ? const Radius.circular(12) : Radius.zero,
       ),
       child: Padding(
@@ -384,18 +383,12 @@ class ProfileScreen extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     subtitle,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.grey[600],
-                    ),
+                    style: TextStyle(fontSize: 13, color: Colors.grey[600]),
                   ),
                 ],
               ),
             ),
-            Icon(
-              Icons.chevron_right,
-              color: Colors.grey[400],
-            ),
+            Icon(Icons.chevron_right, color: Colors.grey[400]),
           ],
         ),
       ),

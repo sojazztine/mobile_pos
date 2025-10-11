@@ -18,7 +18,8 @@ class Home extends StatefulWidget {
   State<Home> createState() => _HomeState();
 }
 
-class _HomeState extends State<Home> with SingleTickerProviderStateMixin, RouteAware {
+class _HomeState extends State<Home>
+    with SingleTickerProviderStateMixin, RouteAware {
   late TabController _tabController;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final TextEditingController _searchController = TextEditingController();
@@ -27,7 +28,13 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin, RouteA
   List<Dish> filteredDishes = [];
   bool isLoading = true;
 
-  final List<String> categories = ['All', 'Popular', 'Appetizers', 'Main Courses', 'Desserts'];
+  final List<String> categories = [
+    'All',
+    'Popular',
+    'Appetizers',
+    'Main Courses',
+    'Desserts',
+  ];
 
   @override
   void initState() {
@@ -101,8 +108,8 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin, RouteA
         final lowerQuery = searchQuery.toLowerCase();
         filteredDishes = allDishes.where((dish) {
           return dish.name.toLowerCase().contains(lowerQuery) ||
-                 dish.description.toLowerCase().contains(lowerQuery) ||
-                 dish.category.toLowerCase().contains(lowerQuery);
+              dish.description.toLowerCase().contains(lowerQuery) ||
+              dish.category.toLowerCase().contains(lowerQuery);
         }).toList();
 
         if (selectedCategory != 'All') {
@@ -153,15 +160,15 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin, RouteA
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(8),
+                        padding: const EdgeInsets.all(6),
                         decoration: BoxDecoration(
                           color: Colors.pink,
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: const Icon(
-                          Icons.restaurant,
-                          color: Colors.white,
+                          Icons.restaurant_menu,
                           size: 20,
+                          color: Colors.white, // you can change this to match your theme
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -286,10 +293,10 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin, RouteA
                 searchQuery.isNotEmpty
                     ? 'Search Results (${filteredDishes.length})'
                     : selectedCategory == 'All'
-                        ? 'All Dishes'
-                        : selectedCategory == 'Popular'
-                            ? 'Popular Dishes'
-                            : selectedCategory,
+                    ? 'All Dishes'
+                    : selectedCategory == 'Popular'
+                    ? 'Popular Dishes'
+                    : selectedCategory,
                 style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -303,45 +310,44 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin, RouteA
             Expanded(
               child: isLoading
                   ? const Center(
-                      child: CircularProgressIndicator(
-                        color: Colors.pink,
-                      ),
+                      child: CircularProgressIndicator(color: Colors.pink),
                     )
                   : filteredDishes.isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.search_off,
-                                size: 64,
-                                color: Colors.grey[300],
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                'No dishes found',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  color: Colors.grey[600],
-                                ),
-                              ),
-                            ],
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.search_off,
+                            size: 64,
+                            color: Colors.grey[300],
                           ),
-                        )
-                      : GridView.builder(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          const SizedBox(height: 16),
+                          Text(
+                            'No dishes found',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : GridView.builder(
+                      padding: const EdgeInsets.fromLTRB(16.0, 0, 16.0, 80.0),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: 2,
                             mainAxisSpacing: 16,
                             crossAxisSpacing: 16,
                             childAspectRatio: 0.7,
                           ),
-                          itemCount: filteredDishes.length,
-                          itemBuilder: (context, index) {
-                            final dish = filteredDishes[index];
-                            return _buildDishCard(dish);
-                          },
-                        ),
+                      itemCount: filteredDishes.length,
+                      itemBuilder: (context, index) {
+                        final dish = filteredDishes[index];
+                        return _buildDishCard(dish);
+                      },
+                    ),
             ),
           ],
         ),
@@ -420,27 +426,18 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin, RouteA
             const SizedBox(height: 8),
             Text(
               title,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-              ),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
             ),
             Text(
               description,
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontSize: 12,
-              ),
+              style: TextStyle(color: Colors.grey[600], fontSize: 12),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 4),
             Text(
               price,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-              ),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
             ),
           ],
         ),
@@ -516,7 +513,23 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin, RouteA
                       borderRadius: const BorderRadius.vertical(
                         top: Radius.circular(16),
                       ),
+                      image:
+                          dish.imagePath != null && dish.imagePath!.isNotEmpty
+                          ? DecorationImage(
+                              image: FileImage(File(dish.imagePath!)),
+                              fit: BoxFit.cover,
+                            )
+                          : null,
                     ),
+                    child: dish.imagePath == null || dish.imagePath!.isEmpty
+                        ? Center(
+                            child: Icon(
+                              Icons.fastfood,
+                              size: 48,
+                              color: Colors.white.withOpacity(0.7),
+                            ),
+                          )
+                        : null,
                   ),
                   // Add to Cart Button
                   Positioned(
@@ -528,7 +541,11 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin, RouteA
                         shape: BoxShape.circle,
                       ),
                       child: IconButton(
-                        icon: const Icon(Icons.add, color: Colors.white, size: 20),
+                        icon: const Icon(
+                          Icons.add,
+                          color: Colors.white,
+                          size: 20,
+                        ),
                         padding: const EdgeInsets.all(8),
                         constraints: const BoxConstraints(),
                         onPressed: () {
@@ -569,10 +586,7 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin, RouteA
                   const SizedBox(height: 4),
                   Text(
                     dish.description,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.grey[600],
-                    ),
+                    style: TextStyle(fontSize: 11, color: Colors.grey[600]),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -662,7 +676,9 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin, RouteA
                           Navigator.pop(context);
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => const ProfileScreen()),
+                            MaterialPageRoute(
+                              builder: (context) => const ProfileScreen(),
+                            ),
                           );
                         },
                         child: Text(
@@ -677,78 +693,92 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin, RouteA
                   ),
                 ),
 
-            // Menu Items
-            Expanded(
-              child: ListView(
-                padding: EdgeInsets.zero,
-                children: [
-                  _buildDrawerItem(
-                    icon: Icons.home,
-                    label: 'Home',
-                    isSelected: true,
-                    onTap: () {
-                      Navigator.pop(context);
-                    },
+                // Menu Items
+                Expanded(
+                  child: ListView(
+                    padding: EdgeInsets.zero,
+                    children: [
+                      _buildDrawerItem(
+                        icon: Icons.home,
+                        label: 'Home',
+                        isSelected: true,
+                        onTap: () {
+                          Navigator.pop(context);
+                        },
+                      ),
+                      _buildDrawerItem(
+                        icon: Icons.restaurant_menu,
+                        label: 'Menu',
+                        onTap: () {
+                          Navigator.pop(context);
+                        },
+                      ),
+                      _buildDrawerItem(
+                        icon: Icons.shopping_cart_outlined,
+                        label: 'My Cart',
+                        onTap: () {
+                          Navigator.pop(context);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const CartScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildDrawerItem(
+                        icon: Icons.receipt_long_outlined,
+                        label: 'Orders',
+                        onTap: () {
+                          Navigator.pop(context);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const OrdersScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildDrawerItem(
+                        icon: Icons.favorite_outline,
+                        label: 'Favorites',
+                        onTap: () {
+                          Navigator.pop(context);
+                          // TODO: Navigate to Favorites screen when created
+                        },
+                      ),
+                      _buildDrawerItem(
+                        icon: Icons.person_outline,
+                        label: 'Profile',
+                        onTap: () {
+                          Navigator.pop(context);
+                           Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const ProfileScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildDrawerItem(
+                        icon: Icons.settings_outlined,
+                        label: 'Settings',
+                        onTap: () {
+                          Navigator.pop(context);
+                          // Navigate to settings when created
+                        },
+                      ),
+                      _buildDrawerItem(
+                        icon: Icons.help_outline,
+                        label: 'Help & Support',
+                        onTap: () {
+                          Navigator.pop(context);
+                          // TODO: Navigate to Help & Support screen when created
+                        },
+                      ),
+                    ],
                   ),
-                  _buildDrawerItem(
-                    icon: Icons.restaurant_menu,
-                    label: 'Menu',
-                    onTap: () {
-                      Navigator.pop(context);
-                    },
-                  ),
-                  _buildDrawerItem(
-                    icon: Icons.shopping_cart_outlined,
-                    label: 'My Cart',
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const CartScreen()),
-                      );
-                    },
-                  ),
-                  _buildDrawerItem(
-                    icon: Icons.receipt_long_outlined,
-                    label: 'Orders',
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const OrdersScreen()),
-                      );
-                    },
-                  ),
-                  _buildDrawerItem(
-                    icon: Icons.favorite_outline,
-                    label: 'Favorites',
-                    onTap: () {
-                      Navigator.pop(context);
-                      // TODO: Navigate to Favorites screen when created
-                    },
-                  ),
-                  _buildDrawerItem(
-                    icon: Icons.settings_outlined,
-                    label: 'Settings',
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const ProfileScreen()),
-                      );
-                    },
-                  ),
-                  _buildDrawerItem(
-                    icon: Icons.help_outline,
-                    label: 'Help & Support',
-                    onTap: () {
-                      Navigator.pop(context);
-                      // TODO: Navigate to Help & Support screen when created
-                    },
-                  ),
-                ],
-              ),
-            ),
+                ),
 
                 // Logout Button (only show if logged in)
                 if (authModel.isLoggedIn)
@@ -762,7 +792,9 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin, RouteA
                           builder: (BuildContext dialogContext) {
                             return AlertDialog(
                               title: const Text('Logout'),
-                              content: const Text('Are you sure you want to logout?'),
+                              content: const Text(
+                                'Are you sure you want to logout?',
+                              ),
                               actions: [
                                 TextButton(
                                   onPressed: () {
@@ -777,12 +809,17 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin, RouteA
                                     Navigator.pop(dialogContext);
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       const SnackBar(
-                                        content: Text('Logged out successfully'),
+                                        content: Text(
+                                          'Logged out successfully',
+                                        ),
                                         backgroundColor: Colors.green,
                                       ),
                                     );
                                   },
-                                  child: const Text('Logout', style: TextStyle(color: Colors.red)),
+                                  child: const Text(
+                                    'Logout',
+                                    style: TextStyle(color: Colors.red),
+                                  ),
                                 ),
                               ],
                             );
@@ -791,7 +828,11 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin, RouteA
                       },
                       child: Row(
                         children: [
-                          const Icon(Icons.logout, color: Colors.black54, size: 22),
+                          const Icon(
+                            Icons.logout,
+                            color: Colors.black54,
+                            size: 22,
+                          ),
                           const SizedBox(width: 16),
                           Text(
                             'Logout',
@@ -845,4 +886,3 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin, RouteA
     );
   }
 }
-

@@ -129,7 +129,7 @@ class _SplashScreenState extends State<SplashScreen>
                             ],
                           ).createShader(bounds),
                           child: const Text(
-                            'Codecrave',
+                            'CodeCrave',
                             style: TextStyle(
                               fontSize: 48,
                               fontWeight: FontWeight.bold,
@@ -151,7 +151,7 @@ class _SplashScreenState extends State<SplashScreen>
                   child: const Padding(
                     padding: EdgeInsets.only(bottom: 50),
                     child: Text(
-                      'Powered by Codecrave',
+                      '',
                       style: TextStyle(
                         color: Color(0xFFE91E63),
                         fontSize: 14,

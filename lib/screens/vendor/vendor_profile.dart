@@ -6,6 +6,7 @@ import '../common/home.dart';
 import 'vendor_menu_management.dart';
 import 'vendor_orders.dart';
 import 'vendor_reports.dart';
+import 'vendor_store_settings.dart';
 import '../../utils/image_picker_helper.dart';
 import '../../services/image_storage_service.dart';
 import '../../widgets/common/image_picker_widget.dart';
@@ -19,7 +20,6 @@ class VendorProfile extends StatefulWidget {
 }
 
 class _VendorProfileState extends State<VendorProfile> {
-  int _selectedIndex = 4; // Profile tab
   File? _selectedImageFile;
 
   String _getInitials(String fullName) {
@@ -76,10 +76,7 @@ class _VendorProfileState extends State<VendorProfile> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
-        ),
+        automaticallyImplyLeading: false,
         title: const Text(
           'Profile & Settings',
           style: TextStyle(
@@ -128,21 +125,16 @@ class _VendorProfileState extends State<VendorProfile> {
             const SizedBox(height: 12),
             _buildMenuItem(
               icon: Icons.store,
-              title: 'Store Name',
-              subtitle: 'Italian Bistro',
-              onTap: () {},
-            ),
-            _buildMenuItem(
-              icon: Icons.location_on_outlined,
-              title: 'Address',
-              subtitle: '123 Main St, Anytown',
-              onTap: () {},
-            ),
-            _buildMenuItem(
-              icon: Icons.phone_outlined,
-              title: 'Contact Number',
-              subtitle: '+1 (555) 123-4567',
-              onTap: () {},
+              title: 'Store Settings',
+              subtitle: 'Edit store information',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const VendorStoreSettings(),
+                  ),
+                );
+              },
             ),
 
             const SizedBox(height: 24),
@@ -241,7 +233,6 @@ class _VendorProfileState extends State<VendorProfile> {
           ],
         ),
       ),
-      bottomNavigationBar: _buildBottomNav(),
     );
   }
 
@@ -314,58 +305,4 @@ class _VendorProfileState extends State<VendorProfile> {
     );
   }
 
-  Widget _buildBottomNav() {
-    return BottomNavigationBar(
-      currentIndex: _selectedIndex,
-      onTap: (index) {
-        if (index != _selectedIndex) {
-          if (index == 0) {
-            Navigator.pop(context); // Go back to dashboard
-          } else if (index == 1) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => const VendorMenuManagement()),
-            );
-          } else if (index == 2) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => const VendorOrders()),
-            );
-          } else if (index == 3) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => const VendorReports()),
-            );
-          }
-        }
-      },
-      type: BottomNavigationBarType.fixed,
-      selectedItemColor: Colors.pink,
-      unselectedItemColor: Colors.grey,
-      selectedFontSize: 12,
-      unselectedFontSize: 12,
-      items: const [
-        BottomNavigationBarItem(
-          icon: Icon(Icons.dashboard),
-          label: 'Dashboard',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.restaurant_menu),
-          label: 'Menu',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.shopping_cart),
-          label: 'Orders',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.bar_chart),
-          label: 'Reports',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.person),
-          label: 'Profile',
-        ),
-      ],
-    );
-  }
 }

@@ -6,6 +6,7 @@ class Dish {
   final String category; // 'Popular', 'Appetizers', 'Main Courses'
   final String imageType;
   final int colorValue;
+  final String? imagePath; // Path to product image file
 
   Dish({
     required this.id,
@@ -15,6 +16,7 @@ class Dish {
     required this.category,
     required this.imageType,
     required this.colorValue,
+    this.imagePath,
   });
 }
 

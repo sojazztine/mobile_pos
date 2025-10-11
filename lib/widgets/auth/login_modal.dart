@@ -108,10 +108,7 @@ class _LoginModalState extends State<LoginModal> {
                   const SizedBox(height: 8),
                   Text(
                     'Login to manage your restaurant',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[600],
-                    ),
+                    style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                   ),
                   const SizedBox(height: 40),
 
@@ -120,7 +117,10 @@ class _LoginModalState extends State<LoginModal> {
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
                     decoration: InputDecoration(
-                      prefixIcon: Icon(Icons.alternate_email, color: Colors.grey[400]),
+                      prefixIcon: Icon(
+                        Icons.alternate_email,
+                        color: Colors.grey[400],
+                      ),
                       hintText: 'Username or Email',
                       hintStyle: TextStyle(color: Colors.grey[400]),
                       filled: true,
@@ -135,11 +135,17 @@ class _LoginModalState extends State<LoginModal> {
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: Colors.pink, width: 2),
+                        borderSide: const BorderSide(
+                          color: Colors.pink,
+                          width: 2,
+                        ),
                       ),
                       errorBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: Colors.red, width: 1),
+                        borderSide: const BorderSide(
+                          color: Colors.red,
+                          width: 1,
+                        ),
                       ),
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 16,
@@ -160,10 +166,15 @@ class _LoginModalState extends State<LoginModal> {
                     controller: _passwordController,
                     obscureText: _obscurePassword,
                     decoration: InputDecoration(
-                      prefixIcon: Icon(Icons.lock_outline, color: Colors.grey[400]),
+                      prefixIcon: Icon(
+                        Icons.lock_outline,
+                        color: Colors.grey[400],
+                      ),
                       suffixIcon: IconButton(
                         icon: Icon(
-                          _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                          _obscurePassword
+                              ? Icons.visibility_off
+                              : Icons.visibility,
                           color: Colors.grey[400],
                         ),
                         onPressed: () {
@@ -186,11 +197,17 @@ class _LoginModalState extends State<LoginModal> {
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: Colors.pink, width: 2),
+                        borderSide: const BorderSide(
+                          color: Colors.pink,
+                          width: 2,
+                        ),
                       ),
                       errorBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: Colors.red, width: 1),
+                        borderSide: const BorderSide(
+                          color: Colors.red,
+                          width: 1,
+                        ),
                       ),
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 16,
@@ -215,35 +232,38 @@ class _LoginModalState extends State<LoginModal> {
                       },
                       child: const Text(
                         'Forgot Password?',
-                        style: TextStyle(
-                          color: Colors.pink,
-                          fontSize: 14,
-                        ),
+                        style: TextStyle(color: Colors.pink, fontSize: 14),
                       ),
                     ),
                   ),
                   const SizedBox(height: 8),
 
                   // Login Button
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton(
-                      onPressed: _handleLogin,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.pink,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                  // Login Button
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ), // outer spacing
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        onPressed: _handleLogin,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.pink,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          elevation: 0,
                         ),
-                        elevation: 0,
-                        minimumSize: Size.zero,
-                      ),
-                      child: const Text(
-                        'Login',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
+                        child: const Text(
+                          'Login',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                     ),
@@ -292,10 +312,7 @@ class _LoginModalState extends State<LoginModal> {
                       ),
                       label: const Text(
                         'Continue with Google',
-                        style: TextStyle(
-                          fontSize: 15,
-                          color: Colors.black87,
-                        ),
+                        style: TextStyle(fontSize: 15, color: Colors.black87),
                       ),
                     ),
                   ),
@@ -307,10 +324,7 @@ class _LoginModalState extends State<LoginModal> {
                     children: [
                       Text(
                         "Don't have an account? ",
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[700],
-                        ),
+                        style: TextStyle(fontSize: 14, color: Colors.grey[700]),
                       ),
                       GestureDetector(
                         onTap: () async {
@@ -340,10 +354,7 @@ class _LoginModalState extends State<LoginModal> {
                   // Footer
                   Text(
                     '© 2024 Food Ordering System. All rights reserved.',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[500],
-                    ),
+                    style: TextStyle(fontSize: 12, color: Colors.grey[500]),
                     textAlign: TextAlign.center,
                   ),
                 ],

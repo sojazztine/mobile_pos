@@ -2,6 +2,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'vendor_add_product.dart';
+import 'vendor_edit_product.dart';
+import 'vendor_dashboard.dart';
 import 'vendor_orders.dart';
 import 'vendor_reports.dart';
 import 'vendor_profile.dart';
@@ -17,7 +19,6 @@ class VendorMenuManagement extends StatefulWidget {
 }
 
 class _VendorMenuManagementState extends State<VendorMenuManagement> {
-  int _selectedIndex = 1; // Menu tab
   List<Product> vendorProducts = [];
   bool isLoading = true;
 
@@ -65,10 +66,7 @@ class _VendorMenuManagementState extends State<VendorMenuManagement> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
-        ),
+        automaticallyImplyLeading: false,
         title: const Text(
           'Menu Management',
           style: TextStyle(
@@ -204,46 +202,24 @@ class _VendorMenuManagementState extends State<VendorMenuManagement> {
           ],
         ),
       ),
-      bottomNavigationBar: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Add Item Button
-          Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const VendorAddProduct(),
-                    ),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.pink,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  elevation: 0,
-                ),
-                icon: const Icon(Icons.add_circle_outline),
-                label: const Text(
-                  'Add Item',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const VendorAddProduct(),
             ),
+          );
+        },
+        backgroundColor: Colors.pink,
+        icon: const Icon(Icons.add_circle_outline),
+        label: const Text(
+          'Add Item',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
           ),
-          // Bottom Navigation
-          _buildBottomNav(),
-        ],
+        ),
       ),
     );
   }
@@ -320,135 +296,105 @@ class _VendorMenuManagementState extends State<VendorMenuManagement> {
     final statusColor = isAvailable ? Colors.green : Colors.red;
     final status = isAvailable ? 'Available' : (product.stockQuantity == 0 ? 'Out of Stock' : 'Unavailable');
 
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.grey[50],
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[200]!),
-      ),
-      child: Row(
-        children: [
-          // Item Image
-          Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              color: Color(product.colorValue).withOpacity(0.3),
-              borderRadius: BorderRadius.circular(8),
-              image: product.imagePath != null && product.imagePath!.isNotEmpty
-                  ? DecorationImage(
-                      image: FileImage(File(product.imagePath!)),
-                      fit: BoxFit.cover,
+    return InkWell(
+      onTap: () async {
+        final result = await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => VendorEditProduct(product: product),
+          ),
+        );
+
+        // Reload products if updated or deleted
+        if (result == true) {
+          _loadVendorProducts();
+        }
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.grey[50],
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey[200]!),
+        ),
+        child: Row(
+          children: [
+            // Item Image
+            Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                color: Color(product.colorValue).withOpacity(0.3),
+                borderRadius: BorderRadius.circular(8),
+                image: product.imagePath != null && product.imagePath!.isNotEmpty
+                    ? DecorationImage(
+                        image: FileImage(File(product.imagePath!)),
+                        fit: BoxFit.cover,
+                      )
+                    : null,
+              ),
+              child: product.imagePath == null || product.imagePath!.isEmpty
+                  ? const Icon(
+                      Icons.fastfood,
+                      color: Colors.white,
+                      size: 24,
                     )
                   : null,
             ),
-            child: product.imagePath == null || product.imagePath!.isEmpty
-                ? const Icon(
-                    Icons.fastfood,
-                    color: Colors.white,
-                    size: 24,
-                  )
-                : null,
-          ),
-          const SizedBox(width: 12),
-          // Item Info
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  product.name,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
+            const SizedBox(width: 12),
+            // Item Info
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    product.name,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: statusColor,
-                        shape: BoxShape.circle,
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: statusColor,
+                          shape: BoxShape.circle,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      status,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: statusColor,
-                        fontWeight: FontWeight.w500,
+                      const SizedBox(width: 6),
+                      Text(
+                        status,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: statusColor,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                      const SizedBox(width: 8),
+                      Text(
+                        '• \$${product.price.toStringAsFixed(2)}',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-          // Drag Handle
-          Icon(Icons.drag_handle, color: Colors.grey[400]),
-        ],
+            // Arrow
+            Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey[400]),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildBottomNav() {
-    return BottomNavigationBar(
-      currentIndex: _selectedIndex,
-      onTap: (index) {
-        if (index != _selectedIndex) {
-          if (index == 0) {
-            Navigator.pop(context); // Go back to dashboard
-          } else if (index == 2) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => const VendorOrders()),
-            );
-          } else if (index == 3) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => const VendorReports()),
-            );
-          } else if (index == 4) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => const VendorProfile()),
-            );
-          }
-        }
-      },
-      type: BottomNavigationBarType.fixed,
-      selectedItemColor: Colors.pink,
-      unselectedItemColor: Colors.grey,
-      selectedFontSize: 12,
-      unselectedFontSize: 12,
-      items: const [
-        BottomNavigationBarItem(
-          icon: Icon(Icons.dashboard),
-          label: 'Dashboard',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.restaurant_menu),
-          label: 'Menu',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.shopping_cart),
-          label: 'Orders',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.bar_chart),
-          label: 'Reports',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.person),
-          label: 'Profile',
-        ),
-      ],
-    );
-  }
 }
