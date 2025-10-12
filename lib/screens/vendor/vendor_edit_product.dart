@@ -29,9 +29,12 @@ class _VendorEditProductState extends State<VendorEditProduct> {
   bool _isSubmitting = false;
 
   final List<String> _categories = [
+    'Popular',
+    'Appetizers',
+    'Main Courses',
+    'Desserts',
     'Burgers',
     'Pizza',
-    'Desserts',
     'Beverages',
     'Salads',
     'Pasta',
@@ -48,7 +51,10 @@ class _VendorEditProductState extends State<VendorEditProduct> {
     _descriptionController = TextEditingController(text: widget.product.description);
     _priceController = TextEditingController(text: widget.product.price.toString());
     _stockController = TextEditingController(text: widget.product.stockQuantity.toString());
-    _selectedCategory = widget.product.category;
+    // Set category, default to 'Other' if not in list
+    _selectedCategory = _categories.contains(widget.product.category)
+        ? widget.product.category
+        : 'Other';
     _isActive = widget.product.isActive;
   }
 
@@ -358,7 +364,7 @@ class _VendorEditProductState extends State<VendorEditProduct> {
               ),
               const SizedBox(height: 8),
               DropdownButtonFormField<String>(
-                value: _selectedCategory,
+                initialValue: _selectedCategory,
                 decoration: InputDecoration(
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -525,7 +531,7 @@ class _VendorEditProductState extends State<VendorEditProduct> {
                     ),
                     Switch(
                       value: _isActive,
-                      activeColor: Colors.pink,
+                      activeTrackColor: Colors.pink,
                       onChanged: (value) {
                         setState(() {
                           _isActive = value;

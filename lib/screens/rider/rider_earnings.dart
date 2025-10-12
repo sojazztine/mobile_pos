@@ -8,8 +8,6 @@ class RiderEarnings extends StatefulWidget {
 }
 
 class _RiderEarningsState extends State<RiderEarnings> {
-  String _selectedPeriod = 'Weekly';
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -196,9 +194,7 @@ class _RiderEarningsState extends State<RiderEarnings> {
   Widget _buildPeriodTab(String label, bool isSelected) {
     return GestureDetector(
       onTap: () {
-        setState(() {
-          _selectedPeriod = label;
-        });
+        // Period selection could be implemented here
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),

@@ -149,7 +149,7 @@ class OrderDetailsScreen extends StatelessWidget {
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: _getStatusColor(order['status'] ?? '').withOpacity(0.1),
+                        color: _getStatusColor(order['status'] ?? '').withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
@@ -197,7 +197,7 @@ class OrderDetailsScreen extends StatelessWidget {
                         width: 60,
                         height: 60,
                         decoration: BoxDecoration(
-                          color: Colors.pink.withOpacity(0.1),
+                          color: Colors.pink.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: const Icon(
@@ -258,7 +258,7 @@ class OrderDetailsScreen extends StatelessWidget {
                     ],
                   ),
                 );
-              }).toList(),
+              }),
 
               const SizedBox(height: 24),
 

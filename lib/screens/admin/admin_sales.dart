@@ -243,7 +243,7 @@ class _AdminSalesState extends State<AdminSales> {
                         ),
                         belowBarData: BarAreaData(
                           show: true,
-                          color: Colors.pink.withOpacity(0.1),
+                          color: Colors.pink.withValues(alpha: 0.1),
                         ),
                       ),
                     ],

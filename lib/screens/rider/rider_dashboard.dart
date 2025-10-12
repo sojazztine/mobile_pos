@@ -26,19 +26,6 @@ class _RiderDashboardState extends State<RiderDashboard> {
   Future<void> _loadAvailableOrders() async {
     final db = DatabaseService.instance;
     final orders = await db.getPendingOrders();
-    
-    // Debug: Also check all orders to see what's in the database
-    final allOrders = await db.getAllOrders();
-    print('DEBUG: Total orders in database: ${allOrders.length}');
-    for (var order in allOrders) {
-      print('DEBUG: All orders - ID: ${order.id}, Status: ${order.status}, Customer: ${order.customerName}');
-    }
-
-    // Debug: Print order count and details
-    print('DEBUG: Found ${orders.length} pending orders');
-    for (var order in orders) {
-      print('DEBUG: Order ${order.id} - Status: ${order.status} - Customer: ${order.customerName}');
-    }
 
     setState(() {
       availableOrders = orders;
@@ -54,6 +41,8 @@ class _RiderDashboardState extends State<RiderDashboard> {
 
     final db = DatabaseService.instance;
     final success = await db.assignRiderToOrder(order.id!, riderId);
+
+    if (!mounted) return;
 
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -240,7 +229,7 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                 borderRadius: BorderRadius.circular(12),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withOpacity(0.05),
+                                    color: Colors.black.withValues(alpha: 0.05),
                                     blurRadius: 10,
                                     offset: const Offset(0, 2),
                                   ),
@@ -265,7 +254,7 @@ class _RiderDashboardState extends State<RiderDashboard> {
                                           vertical: 4,
                                         ),
                                         decoration: BoxDecoration(
-                                          color: Colors.orange.withOpacity(0.1),
+                                          color: Colors.orange.withValues(alpha: 0.1),
                                           borderRadius: BorderRadius.circular(12),
                                         ),
                                         child: Text(
@@ -455,7 +444,7 @@ class _RiderDashboardState extends State<RiderDashboard> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -503,7 +492,7 @@ class _RiderDashboardState extends State<RiderDashboard> {
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, 2),
             ),
@@ -514,7 +503,7 @@ class _RiderDashboardState extends State<RiderDashboard> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.pink.withOpacity(0.1),
+                color: Colors.pink.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(icon, color: Colors.pink, size: 24),

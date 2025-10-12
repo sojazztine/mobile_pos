@@ -6,6 +6,10 @@ import '../../models/auth_model.dart';
 import 'product_details.dart';
 import '../../models/dish_model.dart';
 import '../../services/database_service.dart';
+import 'search.dart';
+import 'cart.dart';
+import 'orders.dart';
+import 'profile.dart';
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -17,7 +21,6 @@ class Home extends StatefulWidget {
 class _HomeState extends State<Home>
     with SingleTickerProviderStateMixin, RouteAware {
   late TabController _tabController;
-  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final TextEditingController _searchController = TextEditingController();
   String selectedCategory = 'All';
   String searchQuery = '';
@@ -64,7 +67,7 @@ class _HomeState extends State<Home>
         _updateFilteredDishes();
       }
     } catch (e) {
-      print('Error loading dishes: $e');
+      debugPrint('Error loading dishes: $e');
       if (mounted) {
         setState(() {
           filteredDishes = DishData.allDishes;
@@ -124,6 +127,19 @@ class _HomeState extends State<Home>
     });
   }
 
+  String _getUserInitials(String? fullName) {
+    if (fullName == null || fullName.isEmpty) {
+      return 'G';
+    }
+
+    final names = fullName.trim().split(' ');
+    if (names.length == 1) {
+      return names[0][0].toUpperCase();
+    } else {
+      return (names[0][0] + names.last[0]).toUpperCase();
+    }
+  }
+
   @override
   void dispose() {
     _tabController.dispose();
@@ -134,7 +150,6 @@ class _HomeState extends State<Home>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      key: _scaffoldKey,
       backgroundColor: Colors.white,
       drawer: _buildDrawer(),
       body: SafeArea(
@@ -147,11 +162,13 @@ class _HomeState extends State<Home>
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  IconButton(
-                    icon: const Icon(Icons.menu),
-                    onPressed: () {
-                      _scaffoldKey.currentState?.openDrawer();
-                    },
+                  Builder(
+                    builder: (context) => IconButton(
+                      icon: const Icon(Icons.menu),
+                      onPressed: () {
+                        Scaffold.of(context).openDrawer();
+                      },
+                    ),
                   ),
                   Row(
                     children: [
@@ -476,7 +493,7 @@ class _HomeState extends State<Home>
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -508,7 +525,7 @@ class _HomeState extends State<Home>
                             child: Icon(
                               Icons.fastfood,
                               size: 48,
-                              color: Colors.white.withOpacity(0.7),
+                              color: Colors.white.withValues(alpha: 0.7),
                             ),
                           )
                         : null,
@@ -592,270 +609,309 @@ class _HomeState extends State<Home>
     );
   }
 
-  String _getInitials(String name) {
-    if (name.isEmpty) return 'G';
-    final parts = name.trim().split(' ');
-    if (parts.length == 1) {
-      return parts[0][0].toUpperCase();
-    }
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-  }
-
   Widget _buildDrawer() {
-    return Consumer<AuthModel>(
-      builder: (context, authModel, child) {
-        final user = authModel.currentUser;
+    return Drawer(
+      backgroundColor: Colors.white,
+      child: Consumer<AuthModel>(
+        builder: (context, authModel, child) {
+          final user = authModel.currentUser;
 
-        return Drawer(
-          backgroundColor: const Color(0xFFF5F5F5),
-          child: SafeArea(
-            child: Column(
-              children: [
-                // Profile Section
-                Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Column(
-                    children: [
-                      CircleAvatar(
-                        radius: 35,
-                        backgroundColor: Colors.pink[100],
+          return Column(
+            children: [
+              // Modern Minimalist Header
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(24, 60, 24, 32),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Colors.pink.shade400,
+                      Colors.pink.shade600,
+                    ],
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Avatar with subtle shadow
+                    Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.2),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: CircleAvatar(
+                        radius: 36,
+                        backgroundColor: Colors.white,
                         backgroundImage: user?.profileImage != null
                             ? FileImage(File(user!.profileImage!))
                             : null,
                         child: user?.profileImage == null
                             ? Text(
-                                _getInitials(user?.fullName ?? 'Guest User'),
+                                _getUserInitials(user?.fullName),
                                 style: TextStyle(
-                                  color: Colors.pink[700],
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
+                                  color: Colors.pink.shade600,
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               )
                             : null,
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        user?.fullName ?? 'Guest',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                    ),
+                    const SizedBox(height: 16),
+                    // User name
+                    Text(
+                      user?.fullName ?? 'Guest User',
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    // User email
+                    Text(
+                      user?.email ?? 'Sign in to continue',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.white.withValues(alpha: 0.9),
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Menu Items
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  children: [
+                    // Main Navigation Section
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
+                      child: Text(
+                        'MAIN MENU',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey[600],
+                          letterSpacing: 1.2,
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.pop(context);
-                          // Use bottom nav bar instead
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Use the Profile tab in the bottom navigation'),
-                              duration: Duration(seconds: 1),
-                            ),
-                          );
-                        },
-                        child: Text(
-                          user?.email ?? 'View Profile',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
+              _buildMenuItem(
+                icon: Icons.home,
+                label: 'Home',
+                isSelected: true,
+                onTap: () => Navigator.pop(context),
+              ),
+              _buildMenuItem(
+                icon: Icons.search,
+                label: 'Search',
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const SearchScreen()),
+                  );
+                },
+              ),
+              _buildMenuItem(
+                icon: Icons.shopping_cart_outlined,
+                label: 'Cart',
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const CartScreen()),
+                  );
+                },
+              ),
+              _buildMenuItem(
+                icon: Icons.receipt_long_outlined,
+                label: 'Orders',
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const OrdersScreen()),
+                  );
+                },
+              ),
+              _buildMenuItem(
+                icon: Icons.person_outline,
+                label: 'Profile',
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const ProfileScreen()),
+                  );
+                },
+              ),
+              const SizedBox(height: 8),
+              // Other Section
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+                child: Text(
+                  'MORE',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey[600],
+                    letterSpacing: 1.2,
                   ),
                 ),
-
-                // Menu Items
-                Expanded(
-                  child: ListView(
-                    padding: EdgeInsets.zero,
-                    children: [
-                      _buildDrawerItem(
-                        icon: Icons.home,
-                        label: 'Home',
-                        isSelected: true,
-                        onTap: () {
-                          Navigator.pop(context);
-                        },
-                      ),
-                      _buildDrawerItem(
-                        icon: Icons.restaurant_menu,
-                        label: 'Menu',
-                        onTap: () {
-                          Navigator.pop(context);
-                        },
-                      ),
-                      _buildDrawerItem(
-                        icon: Icons.shopping_cart_outlined,
-                        label: 'My Cart',
-                        onTap: () {
-                          Navigator.pop(context);
-                          // Use bottom nav bar instead
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Use the Cart tab in the bottom navigation'),
-                              duration: Duration(seconds: 1),
-                            ),
-                          );
-                        },
-                      ),
-                      _buildDrawerItem(
-                        icon: Icons.receipt_long_outlined,
-                        label: 'Orders',
-                        onTap: () {
-                          Navigator.pop(context);
-                          // Use bottom nav bar instead
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Use the Orders tab in the bottom navigation'),
-                              duration: Duration(seconds: 1),
-                            ),
-                          );
-                        },
-                      ),
-                      _buildDrawerItem(
-                        icon: Icons.favorite_outline,
-                        label: 'Favorites',
-                        onTap: () {
-                          Navigator.pop(context);
-                          // TODO: Navigate to Favorites screen when created
-                        },
-                      ),
-                      _buildDrawerItem(
-                        icon: Icons.person_outline,
-                        label: 'Profile',
-                        onTap: () {
-                          Navigator.pop(context);
-                          // Use bottom nav bar instead
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Use the Profile tab in the bottom navigation'),
-                              duration: Duration(seconds: 1),
-                            ),
-                          );
-                        },
-                      ),
-                      _buildDrawerItem(
-                        icon: Icons.settings_outlined,
-                        label: 'Settings',
-                        onTap: () {
-                          Navigator.pop(context);
-                          // Navigate to settings when created
-                        },
-                      ),
-                      _buildDrawerItem(
-                        icon: Icons.help_outline,
-                        label: 'Help & Support',
-                        onTap: () {
-                          Navigator.pop(context);
-                          // TODO: Navigate to Help & Support screen when created
-                        },
-                      ),
-                    ],
-                  ),
+              ),
+              _buildMenuItem(
+                icon: Icons.favorite_outline,
+                label: 'Favorites',
+                onTap: () {
+                  Navigator.pop(context);
+                  // TODO: Navigate to Favorites
+                },
+              ),
+              _buildMenuItem(
+                icon: Icons.settings_outlined,
+                label: 'Settings',
+                onTap: () {
+                  Navigator.pop(context);
+                  // TODO: Navigate to Settings
+                },
+              ),
+              _buildMenuItem(
+                icon: Icons.help_outline,
+                label: 'Help & Support',
+                onTap: () {
+                  Navigator.pop(context);
+                  // TODO: Navigate to Help
+                },
+              ),
+              // Logout Button
+              if (authModel.isLoggedIn) ...[
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                  child: Divider(height: 1, color: Colors.grey[300]),
                 ),
-
-                // Logout Button (only show if logged in)
-                if (authModel.isLoggedIn)
-                  Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: InkWell(
-                      onTap: () {
-                        Navigator.pop(context);
-                        showDialog(
-                          context: context,
-                          builder: (BuildContext dialogContext) {
-                            return AlertDialog(
-                              title: const Text('Logout'),
-                              content: const Text(
-                                'Are you sure you want to logout?',
-                              ),
-                              actions: [
-                                TextButton(
-                                  onPressed: () {
-                                    Navigator.pop(dialogContext);
-                                  },
-                                  child: const Text('Cancel'),
-                                ),
-                                TextButton(
-                                  onPressed: () async {
-                                    await authModel.logout();
-                                    if (!context.mounted) return;
-                                    Navigator.pop(dialogContext);
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text(
-                                          'Logged out successfully',
-                                        ),
-                                        backgroundColor: Colors.green,
-                                      ),
-                                    );
-                                  },
-                                  child: const Text(
-                                    'Logout',
-                                    style: TextStyle(color: Colors.red),
+                _buildMenuItem(
+                  icon: Icons.logout,
+                  label: 'Logout',
+                  textColor: Colors.red,
+                  onTap: () {
+                    Navigator.pop(context);
+                    showDialog(
+                      context: context,
+                      builder: (BuildContext dialogContext) {
+                        return AlertDialog(
+                          title: const Text('Logout'),
+                          content: const Text('Are you sure you want to logout?'),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(dialogContext),
+                              child: const Text('Cancel'),
+                            ),
+                            TextButton(
+                              onPressed: () async {
+                                await authModel.logout();
+                                if (!context.mounted) return;
+                                Navigator.pop(dialogContext);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Logged out successfully'),
+                                    backgroundColor: Colors.green,
                                   ),
-                                ),
-                              ],
-                            );
-                          },
+                                );
+                              },
+                              child: const Text(
+                                'Logout',
+                                style: TextStyle(color: Colors.red),
+                              ),
+                            ),
+                          ],
                         );
                       },
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.logout,
-                            color: Colors.black54,
-                            size: 22,
-                          ),
-                          const SizedBox(width: 16),
-                          Text(
-                            'Logout',
-                            style: TextStyle(
-                              fontSize: 15,
-                              color: Colors.grey[700],
-                            ),
-                          ),
-                        ],
-                      ),
+                    );
+                  },
+                ),
+              ],
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildMenuItem({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    Color? textColor,
+    bool isSelected = false,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: isSelected ? Colors.pink.withValues(alpha: 0.08) : Colors.transparent,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? Colors.pink.withValues(alpha: 0.15)
+                        : Colors.grey.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    icon,
+                    size: 22,
+                    color: textColor ?? (isSelected ? Colors.pink : Colors.grey[700]),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      color: textColor ?? (isSelected ? Colors.pink : Colors.grey[800]),
+                      fontSize: 15,
+                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                ),
+                if (isSelected)
+                  Container(
+                    width: 6,
+                    height: 6,
+                    decoration: const BoxDecoration(
+                      color: Colors.pink,
+                      shape: BoxShape.circle,
                     ),
                   ),
               ],
             ),
           ),
-        );
-      },
-    );
-  }
-
-  Widget _buildDrawerItem({
-    required IconData icon,
-    required String label,
-    bool isSelected = false,
-    required VoidCallback onTap,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 2.0),
-      child: Container(
-        decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFFCE4EC) : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: ListTile(
-          leading: Icon(
-            icon,
-            color: isSelected ? Colors.pink : Colors.black54,
-            size: 22,
-          ),
-          title: Text(
-            label,
-            style: TextStyle(
-              fontSize: 15,
-              color: isSelected ? Colors.pink : Colors.grey[700],
-              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-            ),
-          ),
-          onTap: onTap,
         ),
       ),
     );

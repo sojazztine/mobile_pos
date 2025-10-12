@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../models/auth_model.dart';
 import '../../services/database_service.dart';
 import '../../models/user_model.dart';
 
@@ -126,7 +124,7 @@ class _AdminVendorManagementState extends State<AdminVendorManagement> {
                     Text(
                       'Create vendor accounts to allow sellers to add products',
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.9),
+                        color: Colors.white.withValues(alpha: 0.9),
                         fontSize: 14,
                       ),
                     ),

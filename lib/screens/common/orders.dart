@@ -93,29 +93,6 @@ class _OrdersScreenState extends State<OrdersScreen>
     );
   }
 
-  Widget _buildTrackingStep(String title, bool completed) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          Icon(
-            completed ? Icons.check_circle : Icons.circle_outlined,
-            color: completed ? Colors.green : Colors.grey,
-            size: 20,
-          ),
-          const SizedBox(width: 8),
-          Text(
-            title,
-            style: TextStyle(
-              color: completed ? Colors.black : Colors.grey,
-              fontWeight: completed ? FontWeight.w600 : FontWeight.normal,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -282,7 +259,7 @@ class _OrdersScreenState extends State<OrdersScreen>
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: _getStatusColor(order.status).withOpacity(0.1),
+                      color: _getStatusColor(order.status).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(

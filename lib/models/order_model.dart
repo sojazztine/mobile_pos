@@ -73,7 +73,7 @@ class Order {
         return itemsList.cast<Map<String, dynamic>>();
       } catch (e) {
         // If JSON decode fails, return empty list for now
-        print('Error parsing items JSON: $e');
+        debugPrint('Error parsing items JSON: $e');
         return [];
       }
     }

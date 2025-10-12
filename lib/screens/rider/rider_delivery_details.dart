@@ -28,6 +28,8 @@ class _RiderDeliveryDetailsScreenState extends State<RiderDeliveryDetailsScreen>
     final db = DatabaseService.instance;
     final success = await db.updateOrderStatus(currentOrder.id!, newStatus);
 
+    if (!mounted) return;
+
     if (success) {
       // Refresh order from database
       final updatedOrder = await db.getOrderById(currentOrder.id!);
@@ -35,6 +37,8 @@ class _RiderDeliveryDetailsScreenState extends State<RiderDeliveryDetailsScreen>
         setState(() {
           currentOrder = updatedOrder;
         });
+
+        if (!mounted) return;
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -110,7 +114,7 @@ class _RiderDeliveryDetailsScreenState extends State<RiderDeliveryDetailsScreen>
         return Container(
           padding: const EdgeInsets.symmetric(vertical: 16),
           decoration: BoxDecoration(
-            color: Colors.green.withOpacity(0.1),
+            color: Colors.green.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: Colors.green),
           ),
@@ -180,7 +184,7 @@ class _RiderDeliveryDetailsScreenState extends State<RiderDeliveryDetailsScreen>
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: _getStatusColor().withOpacity(0.1),
+                  color: _getStatusColor().withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: _getStatusColor()),
                 ),
@@ -343,7 +347,7 @@ class _RiderDeliveryDetailsScreenState extends State<RiderDeliveryDetailsScreen>
                           ],
                         ),
                       );
-                    }).toList(),
+                    }),
                     const Divider(height: 24),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,

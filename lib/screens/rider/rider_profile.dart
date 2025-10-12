@@ -27,6 +27,7 @@ class _RiderProfileState extends State<RiderProfile> {
       });
 
       // Save the image and update user profile
+      if (!mounted) return;
       final authModel = Provider.of<AuthModel>(context, listen: false);
       final user = authModel.currentUser;
       if (user != null && user.id != null) {

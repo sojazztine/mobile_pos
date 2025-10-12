@@ -158,7 +158,7 @@ class _VendorNotificationsState extends State<VendorNotifications> {
 
   Widget _buildNotificationItem(_Notification notification) {
     return Container(
-      color: notification.isRead ? Colors.white : Colors.pink.withOpacity(0.05),
+      color: notification.isRead ? Colors.white : Colors.pink.withValues(alpha: 0.05),
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -166,7 +166,7 @@ class _VendorNotificationsState extends State<VendorNotifications> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: notification.iconColor.withOpacity(0.1),
+              color: notification.iconColor.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(

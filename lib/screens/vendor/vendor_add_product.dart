@@ -266,7 +266,7 @@ class _VendorAddProductState extends State<VendorAddProduct> {
                 ),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
-                  value: _selectedCategory,
+                  initialValue: _selectedCategory,
                   decoration: InputDecoration(
                     hintText: 'Select category',
                     hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),

@@ -20,7 +20,6 @@ class RiderNavigationMapScreen extends StatefulWidget {
 class _RiderNavigationMapScreenState extends State<RiderNavigationMapScreen> {
   int _distanceFeet = 250;
   Timer? _timer;
-  double _progress = 0.5;
 
   @override
   void initState() {
@@ -33,7 +32,6 @@ class _RiderNavigationMapScreenState extends State<RiderNavigationMapScreen> {
       setState(() {
         if (_distanceFeet > 0) {
           _distanceFeet -= 25;
-          _progress += 0.05;
         } else {
           timer.cancel();
         }

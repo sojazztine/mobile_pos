@@ -3,9 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/auth_model.dart';
 import '../common/main_navigation.dart';
-import 'vendor_menu_management.dart';
-import 'vendor_orders.dart';
-import 'vendor_reports.dart';
 import 'vendor_store_settings.dart';
 import '../../utils/image_picker_helper.dart';
 import '../../services/image_storage_service.dart';
@@ -22,13 +19,6 @@ class VendorProfile extends StatefulWidget {
 class _VendorProfileState extends State<VendorProfile> {
   File? _selectedImageFile;
 
-  String _getInitials(String fullName) {
-    final names = fullName.trim().split(' ');
-    if (names.isEmpty) return 'V';
-    if (names.length == 1) return names[0][0].toUpperCase();
-    return '${names[0][0]}${names[names.length - 1][0]}'.toUpperCase();
-  }
-
   Future<void> _pickProfileImage() async {
     final imageFile = await ImagePickerHelper.pickImageWithOptions(context);
     if (imageFile != null) {
@@ -37,6 +27,7 @@ class _VendorProfileState extends State<VendorProfile> {
       });
 
       // Save the image and update user profile
+      if (!mounted) return;
       final authModel = Provider.of<AuthModel>(context, listen: false);
       final user = authModel.currentUser;
       if (user != null && user.id != null) {
@@ -69,7 +60,6 @@ class _VendorProfileState extends State<VendorProfile> {
     final authModel = Provider.of<AuthModel>(context);
     final user = authModel.currentUser;
     final vendorName = user?.fullName ?? 'Sophia Chen';
-    final userInitials = _getInitials(vendorName);
 
     return Scaffold(
       backgroundColor: Colors.grey[50],

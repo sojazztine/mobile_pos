@@ -173,7 +173,7 @@ class _RiderDeliveriesScreenState extends State<RiderDeliveriesScreen> {
           border: Border.all(color: Colors.grey[200]!),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, 2),
             ),
@@ -185,7 +185,7 @@ class _RiderDeliveriesScreenState extends State<RiderDeliveriesScreen> {
               width: 50,
               height: 50,
               decoration: BoxDecoration(
-                color: Colors.pink.withOpacity(0.1),
+                color: Colors.pink.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Icon(Icons.shopping_bag, color: Colors.pink, size: 28),
@@ -218,7 +218,7 @@ class _RiderDeliveriesScreenState extends State<RiderDeliveriesScreen> {
                       vertical: 2,
                     ),
                     decoration: BoxDecoration(
-                      color: statusColor.withOpacity(0.1),
+                      color: statusColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(

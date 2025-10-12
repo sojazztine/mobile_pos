@@ -88,10 +88,10 @@ class _VendorOrderDetailsState extends State<VendorOrderDetails> {
             backgroundColor: Colors.green,
           ),
         );
-      }
 
-      // Return true to indicate status was updated
-      Navigator.pop(context, true);
+        // Return true to indicate status was updated
+        Navigator.pop(context, true);
+      }
     } else {
       setState(() {
         _isUpdating = false;
@@ -234,7 +234,7 @@ class _VendorOrderDetailsState extends State<VendorOrderDetails> {
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: _getStatusColor(_order.status).withOpacity(0.1),
+                        color: _getStatusColor(_order.status).withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
@@ -262,88 +262,92 @@ class _VendorOrderDetailsState extends State<VendorOrderDetails> {
               ),
               const SizedBox(height: 12),
 
-              ..._order.items.map((item) {
-                final itemName = item['name'] ?? 'Unknown Item';
-                final itemPrice = (item['price'] ?? 0.0) as num;
-                final itemQuantity = (item['quantity'] ?? 1) as num;
+              for (var item in _order.items) ...[
+                Builder(
+                  builder: (context) {
+                    final itemName = item['name'] ?? 'Unknown Item';
+                    final itemPrice = (item['price'] ?? 0.0) as num;
+                    final itemQuantity = (item['quantity'] ?? 1) as num;
 
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey[200]!),
-                  ),
-                  child: Row(
-                    children: [
-                      // Item Image
-                      Container(
-                        width: 60,
-                        height: 60,
-                        decoration: BoxDecoration(
-                          color: Colors.pink.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Icon(
-                          Icons.fastfood,
-                          color: Colors.pink,
-                          size: 30,
-                        ),
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey[200]!),
                       ),
-                      const SizedBox(width: 12),
-
-                      // Item Details
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              itemName,
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '\$${itemPrice.toStringAsFixed(2)} each',
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      // Quantity and Total
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
+                      child: Row(
                         children: [
-                          Text(
-                            'x$itemQuantity',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey[700],
-                              fontWeight: FontWeight.w500,
+                          // Item Image
+                          Container(
+                            width: 60,
+                            height: 60,
+                            decoration: BoxDecoration(
+                              color: Colors.pink.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(
+                              Icons.fastfood,
+                              color: Colors.pink,
+                              size: 30,
                             ),
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '\$${(itemPrice * itemQuantity).toStringAsFixed(2)}',
-                            style: const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.pink,
+                          const SizedBox(width: 12),
+
+                          // Item Details
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  itemName,
+                                  style: const TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '\$${itemPrice.toStringAsFixed(2)} each',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                              ],
                             ),
+                          ),
+
+                          // Quantity and Total
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                'x$itemQuantity',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey[700],
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '\$${(itemPrice * itemQuantity).toStringAsFixed(2)}',
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.pink,
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
-                    ],
-                  ),
-                );
-              }).toList(),
+                    );
+                  },
+                ),
+              ],
 
               const SizedBox(height: 24),
 

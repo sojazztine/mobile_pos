@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/auth_model.dart';
+import '../../models/order_model.dart';
+import '../../models/product_model.dart';
 import '../../services/database_service.dart';
 import 'vendor_menu_management.dart';
 import 'vendor_orders.dart';
@@ -18,12 +20,20 @@ class VendorDashboard extends StatefulWidget {
 class _VendorDashboardState extends State<VendorDashboard> {
   int _selectedIndex = 0;
   String _selectedPeriod = 'Today';
-  List<dynamic> _orders = [];
-  List<dynamic> _products = [];
+  List<Order> _orders = [];
+  List<Product> _products = [];
   bool _isLoading = true;
   int _newOrdersCount = 0;
   int _lowStockCount = 0;
+  int _outOfStockCount = 0;
+  int _totalProducts = 0;
+  int _activeProducts = 0;
   double _todayRevenue = 0.0;
+  double _weekRevenue = 0.0;
+  double _monthRevenue = 0.0;
+  int _todayOrders = 0;
+  int _completedOrders = 0;
+  Map<String, int> _topProducts = {};
 
   @override
   void initState() {
@@ -32,6 +42,10 @@ class _VendorDashboardState extends State<VendorDashboard> {
   }
 
   Future<void> _loadDashboardData() async {
+    setState(() {
+      _isLoading = true;
+    });
+
     final authModel = Provider.of<AuthModel>(context, listen: false);
     final vendorId = authModel.currentUser?.id;
 
@@ -45,28 +59,85 @@ class _VendorDashboardState extends State<VendorDashboard> {
     final db = DatabaseService.instance;
 
     // Load orders and products
-    final orders = await db.getOrdersByVendor(vendorId);
+    final ordersRaw = await db.getOrdersByVendor(vendorId);
+    final orders = ordersRaw.cast<Order>();
     final products = await db.getProductsByVendor(vendorId);
 
-    // Calculate statistics
-    final today = DateTime.now();
-    final todayOrders = orders.where((order) {
-      final orderDate = DateTime.parse(order.createdAt.toString());
+    // Calculate date ranges
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final weekAgo = today.subtract(const Duration(days: 7));
+    final monthStart = DateTime(now.year, now.month, 1);
+
+    // Filter orders by time period
+    final todayOrdersList = orders.where((order) {
+      final orderDate = order.createdAt;
       return orderDate.year == today.year &&
           orderDate.month == today.month &&
           orderDate.day == today.day;
     }).toList();
 
+    final weekOrders = orders.where((order) {
+      return order.createdAt.isAfter(weekAgo);
+    }).toList();
+
+    final monthOrders = orders.where((order) {
+      return order.createdAt.isAfter(monthStart);
+    }).toList();
+
+    // Calculate revenue (only completed orders)
+    final todayRev = todayOrdersList
+        .where((o) => o.status == 'completed')
+        .fold<double>(0.0, (sum, order) => sum + order.price);
+
+    final weekRev = weekOrders
+        .where((o) => o.status == 'completed')
+        .fold<double>(0.0, (sum, order) => sum + order.price);
+
+    final monthRev = monthOrders
+        .where((o) => o.status == 'completed')
+        .fold<double>(0.0, (sum, order) => sum + order.price);
+
+    // Calculate order counts
     final newOrders = orders.where((o) => o.status == 'pending').length;
-    final lowStock = products.where((p) => p.stockQuantity < 10).length;
-    final revenue = todayOrders.fold<double>(0.0, (sum, order) => sum + order.price);
+    final completed = orders.where((o) => o.status == 'completed').length;
+
+    // Calculate product statistics
+    final lowStock = products.where((p) => p.stockQuantity > 0 && p.stockQuantity < 10).length;
+    final outOfStock = products.where((p) => p.stockQuantity == 0).length;
+    final activeProds = products.where((p) => p.isActive).length;
+
+    // Calculate top selling products
+    final productSales = <String, int>{};
+    for (var order in orders) {
+      if (order.status == 'completed') {
+        for (var item in order.items) {
+          final productName = item['name'] as String? ?? 'Unknown';
+          final quantity = item['quantity'] as int? ?? 0;
+          productSales[productName] = (productSales[productName] ?? 0) + quantity;
+        }
+      }
+    }
+
+    // Sort and get top 3 products
+    final sortedProducts = productSales.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    final topProds = Map.fromEntries(sortedProducts.take(3));
 
     setState(() {
       _orders = orders;
       _products = products;
       _newOrdersCount = newOrders;
       _lowStockCount = lowStock;
-      _todayRevenue = revenue;
+      _outOfStockCount = outOfStock;
+      _totalProducts = products.length;
+      _activeProducts = activeProds;
+      _todayRevenue = todayRev;
+      _weekRevenue = weekRev;
+      _monthRevenue = monthRev;
+      _todayOrders = todayOrdersList.length;
+      _completedOrders = completed;
+      _topProducts = topProds;
       _isLoading = false;
     });
   }
@@ -223,7 +294,7 @@ class _VendorDashboardState extends State<VendorDashboard> {
                         });
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white.withOpacity(0.2),
+                        backgroundColor: Colors.white.withValues(alpha: 0.2),
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
@@ -246,6 +317,122 @@ class _VendorDashboardState extends State<VendorDashboard> {
 
             const SizedBox(height: 24),
 
+            // Product Summary Section
+            const Text(
+              'Product Summary',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.grey[200]!),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildProductStatItem(
+                          'Total Products',
+                          '$_totalProducts',
+                          Icons.inventory_2_outlined,
+                          Colors.blue,
+                        ),
+                      ),
+                      Container(
+                        width: 1,
+                        height: 50,
+                        color: Colors.grey[200],
+                      ),
+                      Expanded(
+                        child: _buildProductStatItem(
+                          'Active',
+                          '$_activeProducts',
+                          Icons.check_circle_outline,
+                          Colors.green,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Divider(height: 1, color: Colors.grey[200]),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildProductStatItem(
+                          'Low Stock',
+                          '$_lowStockCount',
+                          Icons.warning_outlined,
+                          Colors.orange,
+                        ),
+                      ),
+                      Container(
+                        width: 1,
+                        height: 50,
+                        color: Colors.grey[200],
+                      ),
+                      Expanded(
+                        child: _buildProductStatItem(
+                          'Out of Stock',
+                          '$_outOfStockCount',
+                          Icons.remove_circle_outline,
+                          Colors.red,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // Top Selling Products
+            if (_topProducts.isNotEmpty) ...[
+              const Text(
+                'Top Selling Products',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.grey[200]!),
+                ),
+                child: Column(
+                  children: [
+                    for (var i = 0; i < _topProducts.entries.length; i++)
+                      Padding(
+                        padding: EdgeInsets.only(
+                          bottom: i < _topProducts.entries.length - 1 ? 16 : 0,
+                        ),
+                        child: _buildTopProductItem(
+                          i + 1,
+                          _topProducts.entries.elementAt(i).key,
+                          _topProducts.entries.elementAt(i).value,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+            ],
+
             // Sales Performance
             const Text(
               'Sales Performance',
@@ -255,6 +442,41 @@ class _VendorDashboardState extends State<VendorDashboard> {
                 color: Colors.black87,
               ),
             ),
+            const SizedBox(height: 16),
+
+            // Revenue Cards Row
+            Row(
+              children: [
+                Expanded(
+                  child: _buildRevenueCard(
+                    'Today',
+                    '\$${_todayRevenue.toStringAsFixed(2)}',
+                    '$_todayOrders orders',
+                    Colors.green,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildRevenueCard(
+                    'This Week',
+                    '\$${_weekRevenue.toStringAsFixed(2)}',
+                    '',
+                    Colors.blue,
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 12),
+
+            // Month revenue card
+            _buildRevenueCard(
+              'This Month',
+              '\$${_monthRevenue.toStringAsFixed(2)}',
+              '$_completedOrders completed orders',
+              Colors.purple,
+            ),
+
             const SizedBox(height: 16),
 
             // Hourly Sales Header
@@ -453,6 +675,155 @@ class _VendorDashboardState extends State<VendorDashboard> {
             color: isSelected ? Colors.white : Colors.black54,
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildProductStatItem(String label, String value, IconData icon, Color color) {
+    return Column(
+      children: [
+        Icon(icon, color: color, size: 28),
+        const SizedBox(height: 8),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: Colors.black87,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey[600],
+            fontWeight: FontWeight.w500,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTopProductItem(int rank, String productName, int quantity) {
+    final rankColors = [Colors.amber, Colors.grey, Colors.brown];
+    final rankColor = rank <= 3 ? rankColors[rank - 1] : Colors.grey;
+
+    return Row(
+      children: [
+        Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            color: rankColor.withValues(alpha: 0.2),
+            shape: BoxShape.circle,
+          ),
+          child: Center(
+            child: Text(
+              '$rank',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: rankColor,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            productName,
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.pink.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            '$quantity sold',
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: Colors.pink,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRevenueCard(String period, String amount, String subtitle, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            color.withValues(alpha: 0.8),
+            color,
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                period,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Colors.white.withValues(alpha: 0.9),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              Icon(
+                Icons.trending_up,
+                color: Colors.white.withValues(alpha: 0.9),
+                size: 20,
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            amount,
+            style: const TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          if (subtitle.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.white.withValues(alpha: 0.8),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }

@@ -106,6 +106,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         final matchingProducts = allProducts.where((p) => p.name == productName).toList();
 
         if (matchingProducts.isEmpty) {
+          if (!mounted) return;
           Navigator.pop(context); // Close loading
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -121,6 +122,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
         // Check if enough stock is available
         if (product.stockQuantity < quantity) {
+          if (!mounted) return;
           Navigator.pop(context); // Close loading
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -154,6 +156,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         );
 
         if (!success) {
+          if (!mounted) return;
           Navigator.pop(context); // Close loading
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -190,12 +193,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       final createdOrder = await db.createOrder(order);
 
       // Debug: Print order creation result
-      print('DEBUG: Order creation result: ${createdOrder != null ? "SUCCESS" : "FAILED"}');
+      debugPrint('DEBUG: Order creation result: ${createdOrder != null ? "SUCCESS" : "FAILED"}');
       if (createdOrder != null) {
-        print('DEBUG: Created order ID: ${createdOrder.id}, Status: ${createdOrder.status}');
+        debugPrint('DEBUG: Created order ID: ${createdOrder.id}, Status: ${createdOrder.status}');
       }
 
       if (createdOrder != null) {
+        if (!mounted) return;
         // Update orders model
         final ordersModel = Provider.of<OrdersModel>(context, listen: false);
         ordersModel.addOrder(createdOrder);
@@ -253,6 +257,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           ),
         );
       } else {
+        if (!mounted) return;
         Navigator.pop(context); // Close loading
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -262,6 +267,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         );
       }
     } catch (e) {
+      if (!mounted) return;
       Navigator.pop(context); // Close loading
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

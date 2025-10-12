@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'package:crypto/crypto.dart';
@@ -129,7 +130,7 @@ class DatabaseService {
         await db.execute('ALTER TABLE products ADD COLUMN stockQuantity INTEGER DEFAULT 0');
       } catch (e) {
         // Column might already exist, ignore error
-        print('Note: stockQuantity column may already exist: $e');
+        debugPrint('Note: stockQuantity column may already exist: $e');
       }
     }
     if (oldVersion < 5) {
@@ -138,7 +139,7 @@ class DatabaseService {
         await db.execute('ALTER TABLE users ADD COLUMN isActive INTEGER DEFAULT 1');
       } catch (e) {
         // Column might already exist, ignore error
-        print('Note: isActive column may already exist: $e');
+        debugPrint('Note: isActive column may already exist: $e');
       }
     }
     if (oldVersion < 6) {
@@ -174,7 +175,7 @@ class DatabaseService {
         await db.execute('ALTER TABLE products ADD COLUMN imagePath TEXT');
       } catch (e) {
         // Column might already exist, ignore error
-        print('Note: imagePath column may already exist: $e');
+        debugPrint('Note: imagePath column may already exist: $e');
       }
     }
     if (oldVersion < 8) {
@@ -205,7 +206,7 @@ class DatabaseService {
         }
       } catch (e) {
         // Column might already exist, ignore error
-        print('Note: vendorName column may already exist: $e');
+        debugPrint('Note: vendorName column may already exist: $e');
       }
     }
     if (oldVersion < 9) {
@@ -237,7 +238,7 @@ class DatabaseService {
         }
       } catch (e) {
         // Columns might already exist, ignore error
-        print('Note: vendorImage/hasCustomization columns may already exist: $e');
+        debugPrint('Note: vendorImage/hasCustomization columns may already exist: $e');
       }
     }
   }
@@ -337,7 +338,7 @@ class DatabaseService {
 
       return hashedUser.copyWith(id: id);
     } catch (e) {
-      print('Error creating user: $e');
+      debugPrint('Error creating user: $e');
       return null;
     }
   }
@@ -436,7 +437,7 @@ class DatabaseService {
       );
       return true;
     } catch (e) {
-      print('Error toggling vendor status: $e');
+      debugPrint('Error toggling vendor status: $e');
       return false;
     }
   }
@@ -468,7 +469,7 @@ class DatabaseService {
       );
       return true;
     } catch (e) {
-      print('Error toggling rider status: $e');
+      debugPrint('Error toggling rider status: $e');
       return false;
     }
   }
@@ -488,7 +489,7 @@ class DatabaseService {
 
       return product.copyWith(id: id);
     } catch (e) {
-      print('Error creating product: $e');
+      debugPrint('Error creating product: $e');
       return null;
     }
   }
@@ -581,7 +582,7 @@ class DatabaseService {
 
       return true;
     } catch (e) {
-      print('Error updating stock: $e');
+      debugPrint('Error updating stock: $e');
       return false;
     }
   }
@@ -594,19 +595,19 @@ class DatabaseService {
 
     try {
       // Debug: Print order data being inserted
-      print('DEBUG: Creating order with status: ${order.status}');
-      print('DEBUG: Order data: ${order.toMap()}');
-      
+      debugPrint('DEBUG: Creating order with status: ${order.status}');
+      debugPrint('DEBUG: Order data: ${order.toMap()}');
+
       final id = await db.insert(
         'orders',
         order.toMap(),
         conflictAlgorithm: ConflictAlgorithm.abort,
       );
 
-      print('DEBUG: Order inserted with ID: $id');
+      debugPrint('DEBUG: Order inserted with ID: $id');
       return order.copyWith(id: id);
     } catch (e) {
-      print('Error creating order: $e');
+      debugPrint('Error creating order: $e');
       return null;
     }
   }
@@ -674,9 +675,9 @@ class DatabaseService {
     );
 
     // Debug: Print raw database results
-    print('DEBUG: Raw database query returned ${maps.length} orders');
+    debugPrint('DEBUG: Raw database query returned ${maps.length} orders');
     for (var map in maps) {
-      print('DEBUG: Raw order - ID: ${map['id']}, Status: ${map['status']}, Customer: ${map['customerName']}');
+      debugPrint('DEBUG: Raw order - ID: ${map['id']}, Status: ${map['status']}, Customer: ${map['customerName']}');
     }
 
     return maps.map((map) => Order.fromMap(map)).toList();
@@ -723,7 +724,7 @@ class DatabaseService {
 
       return true;
     } catch (e) {
-      print('Error updating order status: $e');
+      debugPrint('Error updating order status: $e');
       return false;
     }
   }
@@ -746,7 +747,7 @@ class DatabaseService {
 
       return true;
     } catch (e) {
-      print('Error assigning rider to order: $e');
+      debugPrint('Error assigning rider to order: $e');
       return false;
     }
   }

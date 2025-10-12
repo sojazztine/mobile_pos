@@ -150,7 +150,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                             child: Icon(
                               Icons.fastfood,
                               size: 120,
-                              color: Colors.white.withOpacity(0.7),
+                              color: Colors.white.withValues(alpha: 0.7),
                             ),
                           )
                         : null,
@@ -288,7 +288,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
               color: Colors.white,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.grey.withOpacity(0.1),
+                  color: Colors.grey.withValues(alpha: 0.1),
                   spreadRadius: 1,
                   blurRadius: 10,
                   offset: const Offset(0, -3),

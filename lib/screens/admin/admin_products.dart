@@ -180,7 +180,7 @@ class _AdminProductsState extends State<AdminProducts> {
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
-                  value: selectedCategory,
+                  initialValue: selectedCategory,
                   decoration: const InputDecoration(
                     labelText: 'Category',
                     border: OutlineInputBorder(),
@@ -463,7 +463,7 @@ class _AdminProductsState extends State<AdminProducts> {
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 4,
               offset: const Offset(0, 2),
             ),
@@ -485,7 +485,7 @@ class _AdminProductsState extends State<AdminProducts> {
                   child: Icon(
                     Icons.restaurant,
                     size: 64,
-                    color: Colors.white.withOpacity(0.7),
+                    color: Colors.white.withValues(alpha: 0.7),
                   ),
                 ),
               ),
@@ -543,7 +543,7 @@ class _AdminProductsState extends State<AdminProducts> {
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 4,
               offset: const Offset(0, 2),
             ),
@@ -565,7 +565,7 @@ class _AdminProductsState extends State<AdminProducts> {
                   child: Icon(
                     Icons.fastfood,
                     size: 64,
-                    color: Colors.white.withOpacity(0.7),
+                    color: Colors.white.withValues(alpha: 0.7),
                   ),
                 ),
               ),
