@@ -779,6 +779,197 @@ class DatabaseService {
     return null;
   }
 
+  // ============ RIDER ANALYTICS ============
+
+  // Get rider statistics
+  Future<Map<String, dynamic>> getRiderStatistics(int riderId) async {
+    final db = await database;
+
+    // Get active deliveries count
+    final activeResult = await db.rawQuery('''
+      SELECT COUNT(*) as count
+      FROM orders
+      WHERE riderId = ? AND (status = 'accepted' OR status = 'delivering')
+    ''', [riderId]);
+    final activeCount = Sqflite.firstIntValue(activeResult) ?? 0;
+
+    // Get completed deliveries count
+    final completedResult = await db.rawQuery('''
+      SELECT COUNT(*) as count
+      FROM orders
+      WHERE riderId = ? AND status = 'completed'
+    ''', [riderId]);
+    final completedCount = Sqflite.firstIntValue(completedResult) ?? 0;
+
+    // Get total earnings
+    final earningsResult = await db.rawQuery('''
+      SELECT SUM(price) as total
+      FROM orders
+      WHERE riderId = ? AND status = 'completed'
+    ''', [riderId]);
+    final totalEarnings = (earningsResult.first['total'] as num?)?.toDouble() ?? 0.0;
+    final riderEarnings = totalEarnings * 0.15; // Rider gets 15% of order price
+
+    return {
+      'activeDeliveries': activeCount,
+      'completedDeliveries': completedCount,
+      'totalEarnings': riderEarnings,
+    };
+  }
+
+  // Get rider earnings by period
+  Future<Map<String, dynamic>> getRiderEarnings(int riderId, {String period = 'week'}) async {
+    final db = await database;
+    DateTime startDate;
+
+    final now = DateTime.now();
+    switch (period) {
+      case 'day':
+        startDate = DateTime(now.year, now.month, now.day);
+        break;
+      case 'week':
+        startDate = now.subtract(Duration(days: now.weekday - 1));
+        startDate = DateTime(startDate.year, startDate.month, startDate.day);
+        break;
+      case 'month':
+        startDate = DateTime(now.year, now.month, 1);
+        break;
+      default:
+        startDate = now.subtract(Duration(days: 7));
+    }
+
+    // Get completed orders in period
+    final ordersResult = await db.query(
+      'orders',
+      where: 'riderId = ? AND status = ? AND completedAt >= ?',
+      whereArgs: [riderId, 'completed', startDate.toIso8601String()],
+    );
+
+    final orders = ordersResult.map((map) => Order.fromMap(map)).toList();
+
+    double totalFromDeliveries = 0.0;
+    double totalTips = 0.0;
+    double totalBonuses = 0.0;
+
+    for (var order in orders) {
+      totalFromDeliveries += order.price * 0.15; // 15% commission
+      totalTips += order.price * 0.05; // Assume 5% tips
+    }
+
+    // Calculate bonuses (e.g., $5 for every 5 deliveries)
+    totalBonuses = (orders.length ~/ 5) * 5.0;
+
+    return {
+      'deliveries': totalFromDeliveries,
+      'tips': totalTips,
+      'bonuses': totalBonuses,
+      'total': totalFromDeliveries + totalTips + totalBonuses,
+      'deliveryCount': orders.length,
+    };
+  }
+
+  // Get rider delivery history with pagination
+  Future<List<Order>> getRiderDeliveryHistory(int riderId, {int limit = 10, int offset = 0}) async {
+    final db = await database;
+
+    final maps = await db.query(
+      'orders',
+      where: 'riderId = ? AND status = ?',
+      whereArgs: [riderId, 'completed'],
+      orderBy: 'completedAt DESC',
+      limit: limit,
+      offset: offset,
+    );
+
+    return maps.map((map) => Order.fromMap(map)).toList();
+  }
+
+  // Get rider daily earnings for the week
+  Future<List<Map<String, dynamic>>> getRiderDailyEarnings(int riderId) async {
+    final db = await database;
+    final now = DateTime.now();
+    final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
+
+    List<Map<String, dynamic>> dailyEarnings = [];
+
+    for (int i = 0; i < 7; i++) {
+      final date = startOfWeek.add(Duration(days: i));
+      final startOfDay = DateTime(date.year, date.month, date.day);
+      final endOfDay = startOfDay.add(Duration(days: 1));
+
+      final ordersResult = await db.query(
+        'orders',
+        where: 'riderId = ? AND status = ? AND completedAt >= ? AND completedAt < ?',
+        whereArgs: [
+          riderId,
+          'completed',
+          startOfDay.toIso8601String(),
+          endOfDay.toIso8601String()
+        ],
+      );
+
+      double dayEarnings = 0.0;
+      for (var order in ordersResult) {
+        final price = order['price'] as double;
+        dayEarnings += price * 0.15; // 15% commission
+      }
+
+      dailyEarnings.add({
+        'day': ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][i],
+        'date': date,
+        'earnings': dayEarnings,
+        'deliveries': ordersResult.length,
+      });
+    }
+
+    return dailyEarnings;
+  }
+
+  // Get rider recent payouts
+  Future<List<Map<String, dynamic>>> getRiderPayouts(int riderId, {int limit = 10}) async {
+    final db = await database;
+
+    // Get completed orders grouped by week
+    final now = DateTime.now();
+    List<Map<String, dynamic>> payouts = [];
+
+    for (int week = 0; week < limit; week++) {
+      final endOfWeek = now.subtract(Duration(days: 7 * week));
+      final startOfWeek = endOfWeek.subtract(Duration(days: 7));
+
+      final ordersResult = await db.query(
+        'orders',
+        where: 'riderId = ? AND status = ? AND completedAt >= ? AND completedAt < ?',
+        whereArgs: [
+          riderId,
+          'completed',
+          startOfWeek.toIso8601String(),
+          endOfWeek.toIso8601String(),
+        ],
+      );
+
+      if (ordersResult.isNotEmpty) {
+        double weekEarnings = 0.0;
+        for (var order in ordersResult) {
+          final price = order['price'] as double;
+          weekEarnings += price * 0.15 + price * 0.05; // Commission + tips
+        }
+
+        // Add bonus
+        weekEarnings += (ordersResult.length ~/ 5) * 5.0;
+
+        payouts.add({
+          'amount': weekEarnings,
+          'date': endOfWeek,
+          'status': 'Completed',
+          'deliveryCount': ordersResult.length,
+        });
+      }
+    }
+
+    return payouts;
+  }
+
   // Close database
   Future close() async {
     final db = await database;

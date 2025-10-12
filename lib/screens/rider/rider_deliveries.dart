@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'rider_delivery_details.dart';
+import 'rider_navigation.dart';
 import '../../models/auth_model.dart';
 import '../../models/order_model.dart';
 import '../../services/database_service.dart';
@@ -319,11 +320,10 @@ class _RiderDeliveriesScreenState extends State<RiderDeliveriesScreen> {
                     title: 'Dashboard',
                     onTap: () {
                       Navigator.pop(context);
-                      // Use bottom nav bar instead
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Use the Dashboard tab in the bottom navigation'),
-                          duration: Duration(seconds: 1),
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const RiderNavigation(initialIndex: 0),
                         ),
                       );
                     },
@@ -334,13 +334,7 @@ class _RiderDeliveriesScreenState extends State<RiderDeliveriesScreen> {
                     title: 'Deliveries',
                     onTap: () {
                       Navigator.pop(context);
-                      // Use bottom nav bar instead
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Use the Deliveries tab in the bottom navigation'),
-                          duration: Duration(seconds: 1),
-                        ),
-                      );
+                      // Already on deliveries screen
                     },
                   ),
                   _buildDrawerItem(
@@ -349,11 +343,10 @@ class _RiderDeliveriesScreenState extends State<RiderDeliveriesScreen> {
                     title: 'Earnings',
                     onTap: () {
                       Navigator.pop(context);
-                      // Use bottom nav bar instead
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Use the Earnings tab in the bottom navigation'),
-                          duration: Duration(seconds: 1),
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const RiderNavigation(initialIndex: 2),
                         ),
                       );
                     },
@@ -364,11 +357,10 @@ class _RiderDeliveriesScreenState extends State<RiderDeliveriesScreen> {
                     title: 'Profile',
                     onTap: () {
                       Navigator.pop(context);
-                      // Use bottom nav bar instead
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Use the Profile tab in the bottom navigation'),
-                          duration: Duration(seconds: 1),
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const RiderNavigation(initialIndex: 3),
                         ),
                       );
                     },
@@ -379,11 +371,10 @@ class _RiderDeliveriesScreenState extends State<RiderDeliveriesScreen> {
                     title: 'Settings',
                     onTap: () {
                       Navigator.pop(context);
-                      // Use bottom nav bar instead
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Use the Profile tab in the bottom navigation for settings'),
-                          duration: Duration(seconds: 1),
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const RiderNavigation(initialIndex: 3),
                         ),
                       );
                     },

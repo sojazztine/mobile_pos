@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/order_model.dart';
 import '../../services/database_service.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'rider_navigation_map.dart';
 
 class RiderDeliveryDetailsScreen extends StatefulWidget {
@@ -56,6 +57,21 @@ class _RiderDeliveryDetailsScreenState extends State<RiderDeliveryDetailsScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Failed to update order status'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  void _callCustomer() async {
+    final phoneUrl = Uri.parse('tel:${currentOrder.phoneNumber}');
+    if (await canLaunchUrl(phoneUrl)) {
+      await launchUrl(phoneUrl);
+    } else {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not make phone call'),
           backgroundColor: Colors.red,
         ),
       );
@@ -265,14 +281,26 @@ class _RiderDeliveryDetailsScreenState extends State<RiderDeliveryDetailsScreen>
                     ),
                     const SizedBox(height: 12),
                     Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Icon(Icons.phone, color: Colors.pink, size: 20),
-                        const SizedBox(width: 8),
-                        Text(
-                          currentOrder.phoneNumber,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey[700],
+                        Row(
+                          children: [
+                            const Icon(Icons.phone, color: Colors.pink, size: 20),
+                            const SizedBox(width: 8),
+                            Text(
+                              currentOrder.phoneNumber,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey[700],
+                              ),
+                            ),
+                          ],
+                        ),
+                        IconButton(
+                          onPressed: _callCustomer,
+                          icon: const Icon(Icons.phone, color: Colors.green),
+                          style: IconButton.styleFrom(
+                            backgroundColor: Colors.green.withValues(alpha: 0.1),
                           ),
                         ),
                       ],
@@ -403,7 +431,9 @@ class _RiderDeliveryDetailsScreenState extends State<RiderDeliveryDetailsScreen>
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const RiderNavigationMapScreen(),
+                          builder: (context) => RiderNavigationMapScreen(
+                            order: currentOrder,
+                          ),
                         ),
                       );
                     },

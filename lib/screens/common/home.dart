@@ -202,11 +202,10 @@ class _HomeState extends State<Home>
                           IconButton(
                             icon: const Icon(Icons.shopping_bag_outlined),
                             onPressed: () {
-                              // Don't navigate - user should use bottom nav bar
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Use the Cart tab in the bottom navigation'),
-                                  duration: Duration(seconds: 1),
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const CartScreen(),
                                 ),
                               );
                             },

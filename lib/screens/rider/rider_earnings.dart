@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../models/auth_model.dart';
+import '../../services/database_service.dart';
 
 class RiderEarnings extends StatefulWidget {
   const RiderEarnings({super.key});
@@ -8,6 +11,66 @@ class RiderEarnings extends StatefulWidget {
 }
 
 class _RiderEarningsState extends State<RiderEarnings> {
+  String selectedPeriod = 'week';
+  bool isLoading = true;
+  Map<String, dynamic> earningsData = {
+    'deliveries': 0.0,
+    'tips': 0.0,
+    'bonuses': 0.0,
+    'total': 0.0,
+    'deliveryCount': 0,
+  };
+  List<Map<String, dynamic>> dailyEarnings = [];
+  List<Map<String, dynamic>> payouts = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadEarningsData();
+  }
+
+  Future<void> _loadEarningsData() async {
+    final authModel = Provider.of<AuthModel>(context, listen: false);
+    final riderId = authModel.currentUser?.id;
+
+    if (riderId == null) return;
+
+    setState(() {
+      isLoading = true;
+    });
+
+    final db = DatabaseService.instance;
+
+    // Load earnings for selected period
+    final earnings = await db.getRiderEarnings(riderId, period: selectedPeriod);
+    final daily = await db.getRiderDailyEarnings(riderId);
+    final payoutsList = await db.getRiderPayouts(riderId, limit: 3);
+
+    if (mounted) {
+      setState(() {
+        earningsData = earnings;
+        dailyEarnings = daily;
+        payouts = payoutsList;
+        isLoading = false;
+      });
+    }
+  }
+
+  void _changePeriod(String period) {
+    setState(() {
+      selectedPeriod = period;
+    });
+    _loadEarningsData();
+  }
+
+  String _getMonthName(int month) {
+    const months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    return months[month - 1];
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -26,7 +89,9 @@ class _RiderEarningsState extends State<RiderEarnings> {
         ),
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator(color: Colors.pink))
+          : SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(20.0),
           child: Column(
@@ -36,9 +101,13 @@ class _RiderEarningsState extends State<RiderEarnings> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'This Week',
-                    style: TextStyle(
+                  Text(
+                    selectedPeriod == 'day'
+                        ? 'Today'
+                        : selectedPeriod == 'week'
+                            ? 'This Week'
+                            : 'This Month',
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: Colors.black87,
@@ -46,11 +115,11 @@ class _RiderEarningsState extends State<RiderEarnings> {
                   ),
                   Row(
                     children: [
-                      _buildPeriodTab('Daily', false),
+                      _buildPeriodTab('Daily', selectedPeriod == 'day'),
                       const SizedBox(width: 4),
-                      _buildPeriodTab('Weekly', true),
+                      _buildPeriodTab('Weekly', selectedPeriod == 'week'),
                       const SizedBox(width: 4),
-                      _buildPeriodTab('Monthly', false),
+                      _buildPeriodTab('Monthly', selectedPeriod == 'month'),
                     ],
                   ),
                 ],
@@ -63,7 +132,7 @@ class _RiderEarningsState extends State<RiderEarnings> {
                   Expanded(
                     child: _buildEarningCard(
                       'Deliveries',
-                      '\$250.75',
+                      '\$${(earningsData['deliveries'] as double).toStringAsFixed(2)}',
                       Colors.pink[50]!,
                     ),
                   ),
@@ -71,7 +140,7 @@ class _RiderEarningsState extends State<RiderEarnings> {
                   Expanded(
                     child: _buildEarningCard(
                       'Tips',
-                      '\$50.25',
+                      '\$${(earningsData['tips'] as double).toStringAsFixed(2)}',
                       Colors.pink[50]!,
                     ),
                   ),
@@ -82,7 +151,7 @@ class _RiderEarningsState extends State<RiderEarnings> {
               // Bonuses Card
               _buildEarningCard(
                 'Bonuses',
-                '\$20.00',
+                '\$${(earningsData['bonuses'] as double).toStringAsFixed(2)}',
                 Colors.pink[50]!,
               ),
               const SizedBox(height: 20),
@@ -92,20 +161,20 @@ class _RiderEarningsState extends State<RiderEarnings> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Column(
+                  Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '\$321.00',
-                        style: TextStyle(
+                        '\$${(earningsData['total'] as double).toStringAsFixed(2)}',
+                        style: const TextStyle(
                           fontSize: 32,
                           fontWeight: FontWeight.bold,
                           color: Colors.black87,
                         ),
                       ),
                       Text(
-                        'Total Earnings',
-                        style: TextStyle(
+                        'Total Earnings (${earningsData['deliveryCount']} deliveries)',
+                        style: const TextStyle(
                           fontSize: 13,
                           color: Colors.black54,
                         ),
@@ -138,18 +207,19 @@ class _RiderEarningsState extends State<RiderEarnings> {
               const SizedBox(height: 24),
 
               // Week Calendar
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _buildDayColumn('Mon', false),
-                  _buildDayColumn('Tue', false),
-                  _buildDayColumn('Wed', false),
-                  _buildDayColumn('Thu', false),
-                  _buildDayColumn('Fri', true),
-                  _buildDayColumn('Sat', false),
-                  _buildDayColumn('Sun', false),
-                ],
-              ),
+              if (selectedPeriod == 'week' && dailyEarnings.isNotEmpty)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: dailyEarnings.map((dayData) {
+                    final isToday = dayData['date'].day == DateTime.now().day &&
+                        dayData['date'].month == DateTime.now().month;
+                    return _buildDayColumn(
+                      dayData['day'],
+                      isToday,
+                      dayData['deliveries'],
+                    );
+                  }).toList(),
+                ),
               const SizedBox(height: 32),
 
               // Recent Payouts Section
@@ -164,26 +234,33 @@ class _RiderEarningsState extends State<RiderEarnings> {
               const SizedBox(height: 16),
 
               // Payout Items
-              _buildPayoutItem(
-                amount: '\$320.00',
-                date: 'May 18, 2024',
-                status: 'Completed',
-                statusColor: Colors.green,
-              ),
-              const SizedBox(height: 12),
-              _buildPayoutItem(
-                amount: '\$280.00',
-                date: 'May 9, 2024',
-                status: 'Completed',
-                statusColor: Colors.green,
-              ),
-              const SizedBox(height: 12),
-              _buildPayoutItem(
-                amount: '\$300.00',
-                date: 'May 1, 2024',
-                status: 'Completed',
-                statusColor: Colors.green,
-              ),
+              if (payouts.isEmpty)
+                const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(24.0),
+                    child: Text(
+                      'No payouts yet',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ),
+                )
+              else
+                ...payouts.map((payout) {
+                  final date = payout['date'] as DateTime;
+                  final dateStr = '${_getMonthName(date.month)} ${date.day}, ${date.year}';
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12.0),
+                    child: _buildPayoutItem(
+                      amount: '\$${payout['amount'].toStringAsFixed(2)}',
+                      date: dateStr,
+                      status: payout['status'],
+                      statusColor: Colors.green,
+                    ),
+                  );
+                }),
             ],
           ),
         ),
@@ -194,7 +271,13 @@ class _RiderEarningsState extends State<RiderEarnings> {
   Widget _buildPeriodTab(String label, bool isSelected) {
     return GestureDetector(
       onTap: () {
-        // Period selection could be implemented here
+        if (label == 'Daily') {
+          _changePeriod('day');
+        } else if (label == 'Weekly') {
+          _changePeriod('week');
+        } else if (label == 'Monthly') {
+          _changePeriod('month');
+        }
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -246,7 +329,7 @@ class _RiderEarningsState extends State<RiderEarnings> {
     );
   }
 
-  Widget _buildDayColumn(String day, bool isSelected) {
+  Widget _buildDayColumn(String day, bool isSelected, int deliveryCount) {
     return Column(
       children: [
         Text(
@@ -259,13 +342,27 @@ class _RiderEarningsState extends State<RiderEarnings> {
         ),
         const SizedBox(height: 8),
         Container(
-          width: 8,
-          height: 8,
+          width: deliveryCount > 0 ? 10 : 8,
+          height: deliveryCount > 0 ? 10 : 8,
           decoration: BoxDecoration(
-            color: isSelected ? Colors.pink : Colors.transparent,
+            color: isSelected
+                ? Colors.pink
+                : deliveryCount > 0
+                    ? Colors.pink.withValues(alpha: 0.3)
+                    : Colors.transparent,
             shape: BoxShape.circle,
           ),
         ),
+        if (deliveryCount > 0) ...[
+          const SizedBox(height: 4),
+          Text(
+            '$deliveryCount',
+            style: TextStyle(
+              fontSize: 10,
+              color: Colors.grey[600],
+            ),
+          ),
+        ],
       ],
     );
   }

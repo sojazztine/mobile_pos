@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
+import '../../models/order_model.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class RiderNavigationMapScreen extends StatefulWidget {
-  final String? deliveryAddress;
-  final String? restaurantName;
-  final double distanceMiles;
+  final Order order;
 
   const RiderNavigationMapScreen({
     super.key,
-    this.deliveryAddress,
-    this.restaurantName,
-    this.distanceMiles = 3.2,
+    required this.order,
   });
 
   @override
@@ -18,504 +19,617 @@ class RiderNavigationMapScreen extends StatefulWidget {
 }
 
 class _RiderNavigationMapScreenState extends State<RiderNavigationMapScreen> {
-  int _distanceFeet = 250;
-  Timer? _timer;
+  GoogleMapController? _mapController;
+  Position? _currentPosition;
+  LatLng? _destinationLatLng;
+  Set<Marker> _markers = {};
+  Set<Polyline> _polylines = {};
+  Timer? _locationTimer;
+  bool _isLoading = true;
+  double _distanceInMeters = 0;
+  String _estimatedTime = '';
 
   @override
   void initState() {
     super.initState();
-    _startSimulation();
+    _initializeMap();
   }
 
-  void _startSimulation() {
-    _timer = Timer.periodic(const Duration(seconds: 2), (timer) {
+  @override
+  void dispose() {
+    _locationTimer?.cancel();
+    _mapController?.dispose();
+    super.dispose();
+  }
+
+  Future<void> _initializeMap() async {
+    try {
+      // Check and request location permissions
+      final hasPermission = await _handleLocationPermission();
+      if (!hasPermission) {
+        if (!mounted) return;
+        _showPermissionError();
+        return;
+      }
+
+      // Get current position
+      _currentPosition = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+
+      // Geocode destination address
+      await _geocodeDestination();
+
+      // Setup markers and polyline
+      _setupMapElements();
+
+      // Start real-time location tracking
+      _startLocationTracking();
+
       setState(() {
-        if (_distanceFeet > 0) {
-          _distanceFeet -= 25;
-        } else {
-          timer.cancel();
-        }
+        _isLoading = false;
       });
+
+      // Move camera to show both locations
+      if (_destinationLatLng != null) {
+        _fitMapToBounds();
+      }
+    } catch (e) {
+      debugPrint('Error initializing map: $e');
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+      });
+      _showError('Could not initialize map: $e');
+    }
+  }
+
+  Future<bool> _handleLocationPermission() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      return false;
+    }
+
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        return false;
+      }
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      return false;
+    }
+
+    return true;
+  }
+
+  Future<void> _geocodeDestination() async {
+    try {
+      final addresses = await locationFromAddress(widget.order.deliveryAddress);
+      if (addresses.isNotEmpty) {
+        setState(() {
+          _destinationLatLng = LatLng(
+            addresses.first.latitude,
+            addresses.first.longitude,
+          );
+        });
+      }
+    } catch (e) {
+      debugPrint('Error geocoding address: $e');
+      // Use default location if geocoding fails (San Francisco)
+      setState(() {
+        _destinationLatLng = const LatLng(37.7749, -122.4194);
+      });
+    }
+  }
+
+  void _setupMapElements() {
+    if (_currentPosition == null || _destinationLatLng == null) return;
+
+    final currentLatLng = LatLng(
+      _currentPosition!.latitude,
+      _currentPosition!.longitude,
+    );
+
+    // Calculate distance
+    _distanceInMeters = Geolocator.distanceBetween(
+      currentLatLng.latitude,
+      currentLatLng.longitude,
+      _destinationLatLng!.latitude,
+      _destinationLatLng!.longitude,
+    );
+
+    // Calculate estimated time (assuming 30 mph average speed)
+    final distanceInMiles = _distanceInMeters / 1609.34;
+    final timeInMinutes = (distanceInMiles / 30 * 60).round();
+    _estimatedTime = '$timeInMinutes min';
+
+    setState(() {
+      _markers = {
+        Marker(
+          markerId: const MarkerId('current_location'),
+          position: currentLatLng,
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+          infoWindow: InfoWindow(
+            title: 'Your Location',
+            snippet: 'Rider (${widget.order.restaurant})',
+          ),
+        ),
+        Marker(
+          markerId: const MarkerId('destination'),
+          position: _destinationLatLng!,
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+          infoWindow: InfoWindow(
+            title: 'Delivery Location',
+            snippet: widget.order.customerName,
+          ),
+        ),
+      };
+
+      _polylines = {
+        Polyline(
+          polylineId: const PolylineId('route'),
+          points: [currentLatLng, _destinationLatLng!],
+          color: Colors.blue,
+          width: 5,
+          patterns: [PatternItem.dash(20), PatternItem.gap(10)],
+        ),
+      };
     });
   }
 
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
-  }
+  void _startLocationTracking() {
+    _locationTimer = Timer.periodic(const Duration(seconds: 5), (timer) async {
+      try {
+        final position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high,
+        );
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Navigation'),
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.navigation, size: 100, color: Colors.blue),
-            const SizedBox(height: 20),
-            Text(
-              'Distance: $_distanceFeet ft',
-              style: const TextStyle(fontSize: 24),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              'To: ${widget.deliveryAddress ?? "Delivery Address"}',
-              style: const TextStyle(fontSize: 16),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
+        if (!mounted) return;
 
-// Keep old class for compatibility
-class RiderNavigationMap extends StatefulWidget {
-  final String deliveryAddress;
-  final String restaurantName;
-  final double distanceMiles;
-
-  const RiderNavigationMap({
-    super.key,
-    required this.deliveryAddress,
-    required this.restaurantName,
-    this.distanceMiles = 3.2,
-  });
-
-  @override
-  State<RiderNavigationMap> createState() => _RiderNavigationMapState();
-}
-
-class _RiderNavigationMapState extends State<RiderNavigationMap> {
-  int _distanceFeet = 250;
-  Timer? _timer;
-  double _progress = 0.5;
-
-  @override
-  void initState() {
-    super.initState();
-    _startSimulation();
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
-  }
-
-  void _startSimulation() {
-    // Simulate navigation progress
-    _timer = Timer.periodic(const Duration(seconds: 2), (timer) {
-      if (mounted) {
         setState(() {
-          if (_distanceFeet > 0) {
-            _distanceFeet -= 10;
-            _progress += 0.02;
-          }
+          _currentPosition = position;
         });
+
+        _setupMapElements();
+
+        // Auto-center on rider location
+        _mapController?.animateCamera(
+          CameraUpdate.newLatLng(
+            LatLng(position.latitude, position.longitude),
+          ),
+        );
+      } catch (e) {
+        debugPrint('Error getting location: $e');
       }
     });
   }
 
+  void _fitMapToBounds() {
+    if (_currentPosition == null || _destinationLatLng == null) return;
+
+    final currentLatLng = LatLng(
+      _currentPosition!.latitude,
+      _currentPosition!.longitude,
+    );
+
+    final bounds = LatLngBounds(
+      southwest: LatLng(
+        currentLatLng.latitude < _destinationLatLng!.latitude
+            ? currentLatLng.latitude
+            : _destinationLatLng!.latitude,
+        currentLatLng.longitude < _destinationLatLng!.longitude
+            ? currentLatLng.longitude
+            : _destinationLatLng!.longitude,
+      ),
+      northeast: LatLng(
+        currentLatLng.latitude > _destinationLatLng!.latitude
+            ? currentLatLng.latitude
+            : _destinationLatLng!.latitude,
+        currentLatLng.longitude > _destinationLatLng!.longitude
+            ? currentLatLng.longitude
+            : _destinationLatLng!.longitude,
+      ),
+    );
+
+    _mapController?.animateCamera(
+      CameraUpdate.newLatLngBounds(bounds, 100),
+    );
+  }
+
+  void _centerOnCurrentLocation() {
+    if (_currentPosition != null) {
+      _mapController?.animateCamera(
+        CameraUpdate.newLatLngZoom(
+          LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
+          15,
+        ),
+      );
+    }
+  }
+
+  void _centerOnDestination() {
+    if (_destinationLatLng != null) {
+      _mapController?.animateCamera(
+        CameraUpdate.newLatLngZoom(_destinationLatLng!, 15),
+      );
+    }
+  }
+
+  Future<void> _openInGoogleMaps() async {
+    if (_destinationLatLng == null) return;
+
+    final url = Uri.parse(
+      'https://www.google.com/maps/dir/?api=1'
+      '&destination=${_destinationLatLng!.latitude},${_destinationLatLng!.longitude}'
+      '&travelmode=driving',
+    );
+
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    } else {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not open Google Maps'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  void _callCustomer() async {
+    final phoneUrl = Uri.parse('tel:${widget.order.phoneNumber}');
+    if (await canLaunchUrl(phoneUrl)) {
+      await launchUrl(phoneUrl);
+    }
+  }
+
+  void _showPermissionError() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Location Permission Required'),
+        content: const Text(
+          'This app needs location permission to show navigation. '
+          'Please enable location services and grant permission in your device settings.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.pop(context);
+            },
+            child: const Text('OK'),
+          ),
+          TextButton(
+            onPressed: () async {
+              final navigator = Navigator.of(context);
+              await Geolocator.openLocationSettings();
+              navigator.pop();
+            },
+            child: const Text('Open Settings'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+
+  String _getDistanceText() {
+    if (_distanceInMeters < 1000) {
+      return '${_distanceInMeters.toStringAsFixed(0)} m';
+    } else {
+      return '${(_distanceInMeters / 1000).toStringAsFixed(2)} km';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final int hours = 12;
-    final int minutes = 35;
-    final String timeString = '$hours:$minutes PM arrival';
-    final String distanceString = '(${widget.distanceMiles} mi)';
+    if (_isLoading) {
+      return Scaffold(
+        backgroundColor: Colors.white,
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const CircularProgressIndicator(color: Colors.pink),
+              const SizedBox(height: 20),
+              const Text(
+                'Loading map...',
+                style: TextStyle(fontSize: 16, color: Colors.grey),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Getting your location',
+                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final initialPosition = _currentPosition != null
+        ? LatLng(_currentPosition!.latitude, _currentPosition!.longitude)
+        : const LatLng(37.7749, -122.4194); // Default: San Francisco
 
     return Scaffold(
       body: Stack(
         children: [
-          // Map Placeholder (would be Google Maps or other map widget)
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.grey[200],
+          // Google Map
+          GoogleMap(
+            initialCameraPosition: CameraPosition(
+              target: initialPosition,
+              zoom: 14,
             ),
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.map,
-                    size: 100,
-                    color: Colors.grey[400],
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Map View',
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: Colors.grey[600],
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Google Maps integration would go here',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[500],
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            onMapCreated: (controller) {
+              _mapController = controller;
+              if (_destinationLatLng != null) {
+                _fitMapToBounds();
+              }
+            },
+            markers: _markers,
+            polylines: _polylines,
+            myLocationEnabled: true,
+            myLocationButtonEnabled: false,
+            zoomControlsEnabled: false,
+            mapToolbarEnabled: false,
+            compassEnabled: true,
           ),
 
-          // Top Navigation Info
+          // Top Info Card
           Positioned(
-            top: 40,
-            left: 20,
-            right: 20,
-            child: Column(
-              children: [
-                // Main Direction Card
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[900],
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Row(
-                    children: [
-                      // Direction Icon
-                      Icon(
-                        Icons.turn_left,
-                        color: Colors.blue[400],
-                        size: 32,
-                      ),
-                      const SizedBox(width: 12),
-                      // Direction Info
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Oak Street',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            Text(
-                              '$_distanceFeet ft',
-                              style: TextStyle(
-                                color: Colors.grey[400],
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      // Close Button
-                      IconButton(
-                        icon: const Icon(Icons.close, color: Colors.white),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                    ],
-                  ),
+            top: 50,
+            left: 16,
+            right: 16,
+            child: Material(
+              elevation: 4,
+              borderRadius: BorderRadius.circular(16),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                const SizedBox(height: 12),
-                // Arrival Time Card
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[800],
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.access_time,
-                        color: Colors.grey[400],
-                        size: 18,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        timeString,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        distanceString,
-                        style: TextStyle(
-                          color: Colors.grey[400],
-                          fontSize: 13,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Icon(
-                        Icons.restaurant,
-                        color: Colors.blue[400],
-                        size: 18,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        widget.restaurantName,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Map Controls
-          Positioned(
-            right: 20,
-            top: 250,
-            child: Column(
-              children: [
-                // Zoom In
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[800],
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(8),
-                      topRight: Radius.circular(8),
-                    ),
-                  ),
-                  child: IconButton(
-                    icon: const Icon(Icons.add, color: Colors.white),
-                    onPressed: () {
-                      // Zoom in
-                    },
-                  ),
-                ),
-                Divider(height: 1, color: Colors.grey[700]),
-                // Zoom Out
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[800],
-                    borderRadius: const BorderRadius.only(
-                      bottomLeft: Radius.circular(8),
-                      bottomRight: Radius.circular(8),
-                    ),
-                  ),
-                  child: IconButton(
-                    icon: const Icon(Icons.remove, color: Colors.white),
-                    onPressed: () {
-                      // Zoom out
-                    },
-                  ),
-                ),
-                const SizedBox(height: 12),
-                // Center Location
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: Colors.blue,
-                    borderRadius: BorderRadius.circular(24),
-                  ),
-                  child: IconButton(
-                    icon: const Icon(Icons.navigation, color: Colors.white),
-                    onPressed: () {
-                      // Center on location
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Bottom Delivery Info Sheet
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.grey[900],
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(20),
-                  topRight: Radius.circular(20),
-                ),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Drag Handle
-                  Container(
-                    margin: const EdgeInsets.only(top: 8),
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[700],
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  // Delivery Address
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Row(
+                child: Column(
+                  children: [
+                    Row(
                       children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.pink.shade50,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(
+                            Icons.navigation,
+                            color: Colors.pink,
+                            size: 24,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Delivery to ${widget.deliveryAddress}',
+                                'Order #${widget.order.id}',
                                 style: const TextStyle(
-                                  color: Colors.white,
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
-                              const SizedBox(height: 8),
                               Text(
-                                'Ends in $_distanceFeet ft',
+                                widget.order.customerName,
                                 style: TextStyle(
-                                  color: Colors.grey[400],
-                                  fontSize: 13,
+                                  fontSize: 14,
+                                  color: Colors.grey[600],
                                 ),
                               ),
                             ],
                           ),
                         ),
-                        Text(
-                          '$hours:$minutes PM (${widget.distanceMiles} mi)',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                          ),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () => Navigator.pop(context),
                         ),
                       ],
                     ),
+                    const Divider(height: 24),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        _buildInfoChip(
+                          Icons.straighten,
+                          _getDistanceText(),
+                          'Distance',
+                        ),
+                        _buildInfoChip(
+                          Icons.access_time,
+                          _estimatedTime,
+                          'ETA',
+                        ),
+                        _buildInfoChip(
+                          Icons.restaurant,
+                          widget.order.restaurant,
+                          'From',
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          // Map Controls (Right Side)
+          Positioned(
+            right: 16,
+            top: 220,
+            child: Column(
+              children: [
+                _buildMapButton(
+                  icon: Icons.add,
+                  onPressed: () {
+                    _mapController?.animateCamera(CameraUpdate.zoomIn());
+                  },
+                ),
+                const SizedBox(height: 8),
+                _buildMapButton(
+                  icon: Icons.remove,
+                  onPressed: () {
+                    _mapController?.animateCamera(CameraUpdate.zoomOut());
+                  },
+                ),
+                const SizedBox(height: 16),
+                _buildMapButton(
+                  icon: Icons.my_location,
+                  onPressed: _centerOnCurrentLocation,
+                  color: Colors.blue,
+                ),
+                const SizedBox(height: 8),
+                _buildMapButton(
+                  icon: Icons.location_on,
+                  onPressed: _centerOnDestination,
+                  color: Colors.red,
+                ),
+              ],
+            ),
+          ),
+
+          // Bottom Action Sheet
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: Material(
+              elevation: 8,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(24),
+                topRight: Radius.circular(24),
+              ),
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(24),
+                    topRight: Radius.circular(24),
                   ),
-                  const SizedBox(height: 12),
-                  // Progress Bar
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: LinearProgressIndicator(
-                        value: _progress > 1.0 ? 1.0 : _progress,
-                        backgroundColor: Colors.grey[700],
-                        valueColor: const AlwaysStoppedAnimation<Color>(Colors.blue),
-                        minHeight: 6,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Drag Handle
+                    Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(2),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 20),
-                  // Action Buttons
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Row(
+                    const SizedBox(height: 16),
+
+                    // Address
+                    Row(
                       children: [
-                        // Call Button
+                        const Icon(Icons.location_on, color: Colors.red),
+                        const SizedBox(width: 8),
                         Expanded(
-                          child: Container(
-                            height: 50,
-                            decoration: BoxDecoration(
-                              color: Colors.grey[800],
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: TextButton.icon(
-                              onPressed: () {
-                                // Make call
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Calling customer...'),
-                                    backgroundColor: Colors.green,
-                                  ),
-                                );
-                              },
-                              icon: const Icon(
-                                Icons.phone,
-                                color: Colors.white,
-                                size: 20,
-                              ),
-                              label: const Text(
-                                'Call',
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Delivery Address',
                                 style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 15,
+                                  fontSize: 12,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                              Text(
+                                widget.order.deliveryAddress,
+                                style: const TextStyle(
+                                  fontSize: 14,
                                   fontWeight: FontWeight.w600,
                                 ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    // Action Buttons
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: _callCustomer,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.green,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              elevation: 0,
+                            ),
+                            icon: const Icon(Icons.phone),
+                            label: const Text(
+                              'Call Customer',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ),
                         ),
                         const SizedBox(width: 12),
-                        // End Button
                         Expanded(
-                          child: Container(
-                            height: 50,
-                            decoration: BoxDecoration(
-                              color: Colors.grey[800],
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: TextButton.icon(
-                              onPressed: () {
-                                _showEndDeliveryDialog();
-                              },
-                              icon: const Icon(
-                                Icons.power_settings_new,
-                                color: Colors.white,
-                                size: 20,
+                          child: ElevatedButton.icon(
+                            onPressed: _openInGoogleMaps,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blue,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
                               ),
-                              label: const Text(
-                                'End',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
+                              elevation: 0,
                             ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        // Volume Button
-                        Container(
-                          width: 50,
-                          height: 50,
-                          decoration: BoxDecoration(
-                            color: Colors.grey[800],
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: IconButton(
-                            onPressed: () {
-                              // Toggle volume
-                            },
-                            icon: const Icon(
-                              Icons.volume_up,
-                              color: Colors.white,
-                              size: 20,
+                            icon: const Icon(Icons.directions),
+                            label: const Text(
+                              'Google Maps',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                         ),
                       ],
                     ),
-                  ),
-                  const SizedBox(height: 20),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -524,54 +638,54 @@ class _RiderNavigationMapState extends State<RiderNavigationMap> {
     );
   }
 
-  void _showEndDeliveryDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        backgroundColor: Colors.grey[900],
-        title: const Text(
-          'End Delivery',
-          style: TextStyle(
-            color: Colors.white,
+  Widget _buildInfoChip(IconData icon, String value, String label) {
+    return Column(
+      children: [
+        Icon(icon, size: 20, color: Colors.pink),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 14,
             fontWeight: FontWeight.bold,
           ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
-        content: const Text(
-          'Have you successfully delivered the order?',
-          style: TextStyle(color: Colors.white70),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            color: Colors.grey[600],
+          ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'Cancel',
-              style: TextStyle(color: Colors.grey[400]),
-            ),
+      ],
+    );
+  }
+
+  Widget _buildMapButton({
+    required IconData icon,
+    required VoidCallback onPressed,
+    Color? color,
+  }) {
+    return Material(
+      elevation: 4,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: color ?? Colors.white,
+            borderRadius: BorderRadius.circular(12),
           ),
-          ElevatedButton(
-            onPressed: () {
-              _timer?.cancel();
-              Navigator.pop(context); // Close dialog
-              Navigator.pop(context); // Go back to deliveries
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Delivery completed successfully!'),
-                  backgroundColor: Colors.green,
-                ),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blue,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            child: const Text('Complete'),
+          child: Icon(
+            icon,
+            color: color != null ? Colors.white : Colors.black87,
           ),
-        ],
+        ),
       ),
     );
   }

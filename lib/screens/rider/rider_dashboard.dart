@@ -5,6 +5,7 @@ import '../../models/order_model.dart';
 import '../../services/database_service.dart';
 import '../common/main_navigation.dart';
 import 'rider_deliveries.dart';
+import 'rider_earnings.dart';
 
 class RiderDashboard extends StatefulWidget {
   const RiderDashboard({super.key});
@@ -16,21 +17,51 @@ class RiderDashboard extends StatefulWidget {
 class _RiderDashboardState extends State<RiderDashboard> {
   List<Order> availableOrders = [];
   bool isLoading = true;
+  Map<String, dynamic> statistics = {
+    'activeDeliveries': 0,
+    'completedDeliveries': 0,
+    'totalEarnings': 0.0,
+  };
 
   @override
   void initState() {
     super.initState();
-    _loadAvailableOrders();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    await Future.wait([
+      _loadAvailableOrders(),
+      _loadStatistics(),
+    ]);
   }
 
   Future<void> _loadAvailableOrders() async {
     final db = DatabaseService.instance;
     final orders = await db.getPendingOrders();
 
-    setState(() {
-      availableOrders = orders;
-      isLoading = false;
-    });
+    if (mounted) {
+      setState(() {
+        availableOrders = orders;
+        isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _loadStatistics() async {
+    final authModel = Provider.of<AuthModel>(context, listen: false);
+    final riderId = authModel.currentUser?.id;
+
+    if (riderId == null) return;
+
+    final db = DatabaseService.instance;
+    final stats = await db.getRiderStatistics(riderId);
+
+    if (mounted) {
+      setState(() {
+        statistics = stats;
+      });
+    }
   }
 
   Future<void> _acceptOrder(Order order) async {
@@ -52,10 +83,11 @@ class _RiderDashboardState extends State<RiderDashboard> {
         ),
       );
 
-      // Refresh available orders
-      _loadAvailableOrders();
+      // Refresh data
+      await _loadData();
 
       // Navigate to rider deliveries
+      if (!mounted) return;
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => const RiderDeliveriesScreen()),
@@ -95,7 +127,7 @@ class _RiderDashboardState extends State<RiderDashboard> {
               setState(() {
                 isLoading = true;
               });
-              _loadAvailableOrders();
+              _loadData();
             },
           ),
           IconButton(
@@ -154,7 +186,7 @@ class _RiderDashboardState extends State<RiderDashboard> {
                     child: _buildStatCard(
                       icon: Icons.delivery_dining,
                       title: 'Active',
-                      value: '3',
+                      value: '${statistics['activeDeliveries']}',
                       color: Colors.blue,
                     ),
                   ),
@@ -163,7 +195,7 @@ class _RiderDashboardState extends State<RiderDashboard> {
                     child: _buildStatCard(
                       icon: Icons.check_circle,
                       title: 'Completed',
-                      value: '42',
+                      value: '${statistics['completedDeliveries']}',
                       color: Colors.green,
                     ),
                   ),
@@ -172,7 +204,7 @@ class _RiderDashboardState extends State<RiderDashboard> {
                     child: _buildStatCard(
                       icon: Icons.attach_money,
                       title: 'Earnings',
-                      value: '\$340',
+                      value: '\$${(statistics['totalEarnings'] as double).toStringAsFixed(0)}',
                       color: Colors.orange,
                     ),
                   ),
@@ -352,11 +384,10 @@ class _RiderDashboardState extends State<RiderDashboard> {
                 title: 'My Deliveries',
                 subtitle: 'Track your active deliveries',
                 onTap: () {
-                  // Use bottom nav bar instead
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Use the Deliveries tab in the bottom navigation'),
-                      duration: Duration(seconds: 1),
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const RiderDeliveriesScreen(),
                     ),
                   );
                 },
@@ -380,11 +411,10 @@ class _RiderDashboardState extends State<RiderDashboard> {
                 title: 'Earnings',
                 subtitle: 'View your earnings and payouts',
                 onTap: () {
-                  // Use bottom nav bar instead
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Use the Earnings tab in the bottom navigation'),
-                      duration: Duration(seconds: 1),
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const RiderEarnings(),
                     ),
                   );
                 },

@@ -4,7 +4,7 @@ import 'signup_modal.dart';
 import '../../models/auth_model.dart';
 import '../../screens/admin/admin_dashboard.dart';
 import '../../screens/vendor/vendor_dashboard.dart';
-import '../../screens/rider/rider_dashboard.dart';
+import '../../screens/rider/rider_navigation.dart';
 
 class LoginModal extends StatefulWidget {
   const LoginModal({super.key});
@@ -60,7 +60,7 @@ class _LoginModalState extends State<LoginModal> {
           Navigator.pop(context); // Close login modal
           Navigator.pushAndRemoveUntil(
             context,
-            MaterialPageRoute(builder: (context) => const RiderDashboard()),
+            MaterialPageRoute(builder: (context) => const RiderNavigation()),
             (route) => false,
           );
         } else {
